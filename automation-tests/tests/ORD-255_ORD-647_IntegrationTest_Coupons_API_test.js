@@ -100,8 +100,8 @@ Scenario('ORD-647 [UI-05]: Học viên mua khóa học -> Mở panel Voucher t�
   I.waitInUrl('/checkout?buynow=true', 10);
   I.waitForText('Chọn voucher giảm giá', 15);
   I.click('Chọn voucher giảm giá');
-  I.waitForText('NHẬP MÃ THỦ CÔNG', 15);
-  I.see('NHẬP MÃ THỦ CÔNG');
+  I.waitForText('Nhập mã thủ công', 15);
+  I.see('Nhập mã thủ công');
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'SALE30');
   I.click('Áp dụng');
   I.wait(2);

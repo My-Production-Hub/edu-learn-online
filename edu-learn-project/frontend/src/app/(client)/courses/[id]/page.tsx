@@ -105,7 +105,16 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   }
 
   if (!course) {
-    return notFound();
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-gray-50">
+        <h1 className="text-6xl font-black text-gray-800 mb-4">404</h1>
+        <p className="text-xl font-semibold text-gray-600 mb-2">Không tìm thấy khóa học</p>
+        <p className="text-gray-500 mb-6">Khóa học bạn đang tìm kiếm không tồn tại hoặc đã bị gỡ bỏ.</p>
+        <Link href="/courses" className="px-6 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700">
+          Xem tất cả khóa học
+        </Link>
+      </div>
+    );
   }
 
   const inCart = cartItems.some(item => item.id === course.id);

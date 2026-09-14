@@ -55,8 +55,8 @@ const loginAsAdmin = (I) => {
  */
 Scenario('ORD-736 [IT-CRS-01]: [GET /api/courses] Mở trang chủ -> Hiển thị danh sách khóa học công khai', async ({ I }) => {
   I.amOnPage('/');
-  I.waitForText('KHÓA HỌC', 15);
-  I.see('KHÓA HỌC');
+  I.waitForText('Khóa học', 15);
+  I.see('Khóa học');
 });
 
 /**
