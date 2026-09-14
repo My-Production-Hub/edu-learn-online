@@ -566,144 +566,150 @@ app.delete('/api/admin/combos/:id', authenticateToken, checkUserStatus, requireR
   }
 });
 
-// ================= CHECKOUT / ORDERS =================
-app.post('/api/orders', authenticateToken, checkUserStatus, async (req, res) => {
-  if (!req.body || typeof req.body !== 'object') {
-    return res.status(400).json({ message: 'Dữ liệu đơn hàng không hợp lệ.' });
+// ================= CHECKOUT / ORDERS HELPERS =================
+async function resolveItemPriceAndTitle(db, item) {
+  const course = await db.get('SELECT id, title, price, sale_price FROM courses WHERE id = ?', [item.course_id]);
+  if (course) {
+    const hasSale = course.sale_price !== null && course.sale_price !== undefined;
+    return { price: hasSale ? course.sale_price : course.price, title: course.title };
   }
-
-  const { items, payment_method, ref, coupon_code, payment_qr_content } = req.body;
-
-  if (!payment_method || typeof payment_method !== 'string' || !payment_method.trim()) {
-    return res.status(400).json({ message: 'Vui lòng chọn phương thức thanh toán.' });
+  const combo = await db.get('SELECT id, title, price, sale_price FROM combos WHERE id = ?', [item.course_id]);
+  if (combo) {
+    const hasComboSale = combo.sale_price !== null && combo.sale_price !== undefined;
+    return { price: hasComboSale ? combo.sale_price : combo.price, title: combo.title };
   }
+  const fallbackPrice = Math.max(0, Number(item.price) || 0);
+  const fallbackTitle = typeof item.product_name === 'string' ? item.product_name : String(item.course_id);
+  return { price: fallbackPrice, title: fallbackTitle };
+}
 
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ message: 'Giỏ hàng trống hoặc không hợp lệ.' });
+async function validateCartItems(db, items) {
+  let calculatedSubtotal = 0;
+  const validatedItems = [];
+  for (const item of items) {
+    if (!item || typeof item !== 'object' || !item.course_id) continue;
+    const { price, title } = await resolveItemPriceAndTitle(db, item);
+    calculatedSubtotal += price;
+    validatedItems.push({
+      course_id: String(item.course_id),
+      price,
+      product_name: title
+    });
   }
+  return { calculatedSubtotal, validatedItems };
+}
 
-  let db;
-  let transactionStarted = false;
+async function processServerCoupon(db, couponCode, subtotal) {
+  if (!couponCode || typeof couponCode !== 'string' || !couponCode.trim()) {
+    return { serverDiscount: 0, couponRecord: null, error: null };
+  }
+  const cleanCode = couponCode.trim().toUpperCase();
+  const couponRecord = await db.get('SELECT * FROM coupons WHERE UPPER(code) = ?', [cleanCode]);
+  const today = new Date().toISOString().split('T')[0];
+  const check = validateCouponEligibility(couponRecord, subtotal, today);
+  if (!check.valid) {
+    return { serverDiscount: 0, couponRecord: null, error: { status: check.status, message: check.message } };
+  }
+  const serverDiscount = calculateCouponDiscount(couponRecord, subtotal);
+  return { serverDiscount, couponRecord, error: null };
+}
 
-  try {
-    db = await getDatabase();
+async function resolveAffiliatePartner(db, ref) {
+  if (!ref || typeof ref !== 'string' || !ref.trim()) return null;
+  const cleanRef = ref.trim();
+  const aff = await db.get(
+    'SELECT * FROM affiliates WHERE id = ? OR ctv_code = ? OR ma_ctv = ?',
+    [cleanRef, cleanRef, cleanRef]
+  );
+  return (aff && aff.status === 'approved') ? aff : null;
+}
 
-    // 1. Tính tổng tiền thực tế độc lập từ CSDL (Chống sửa giá từ client)
-    let calculatedSubtotal = 0;
-    const validatedItems = [];
+async function recordAffiliateRewards(db, affRecord, orderId, validatedItems, userId, now) {
+  if (!affRecord) return;
+  const buyer = await db.get('SELECT full_name FROM users WHERE id = ?', [userId]);
+  const buyerName = buyer?.full_name || 'Khách hàng';
 
-    for (const item of items) {
-      if (!item || typeof item !== 'object' || !item.course_id) continue;
+  for (const item of validatedItems) {
+    const commRow = await db.get(
+      'SELECT commission_rate FROM affiliate_commissions WHERE course_id = ?',
+      [item.course_id]
+    );
+    const rate = commRow ? commRow.commission_rate : 10.0;
+    const commission = Math.round(item.price * rate / 100);
 
-      let productPrice = 0;
-      let productName = typeof item.product_name === 'string' ? item.product_name : '';
-
-      const course = await db.get(
-        'SELECT id, title, price, sale_price FROM courses WHERE id = ?',
-        [item.course_id]
-      );
-
-      if (course) {
-        const hasSale = course.sale_price !== null && course.sale_price !== undefined;
-        productPrice = hasSale ? course.sale_price : course.price;
-        productName = course.title;
-      } else {
-        const combo = await db.get(
-          'SELECT id, title, price, sale_price FROM combos WHERE id = ?',
-          [item.course_id]
-        );
-
-        if (combo) {
-          const hasComboSale = combo.sale_price !== null && combo.sale_price !== undefined;
-          productPrice = hasComboSale ? combo.sale_price : combo.price;
-          productName = combo.title;
-        } else {
-          // Giữ nguyên behavior hiện tại.
-          // Trường hợp sản phẩm không tồn tại đang được theo dõi ở bug khác.
-          productPrice = Math.max(0, Number(item.price) || 0);
-        }
-      }
-
-      calculatedSubtotal += productPrice;
-      validatedItems.push({
-        course_id: String(item.course_id),
-        price: productPrice,
-        product_name: productName
-      });
-    }
-
-    if (validatedItems.length === 0) {
-      return res.status(400).json({
-        message: 'Không tìm thấy sản phẩm hợp lệ trong giỏ hàng.'
-      });
-    }
-
-    // 2. Xác thực coupon phía server nếu có áp mã
-    let serverDiscount = 0;
-    let couponRecord = null;
-
-    if (coupon_code && typeof coupon_code === 'string' && coupon_code.trim()) {
-      couponRecord = await db.get(
-        'SELECT * FROM coupons WHERE UPPER(code) = ?',
-        [coupon_code.trim().toUpperCase()]
-      );
-
-      const today = new Date().toISOString().split('T')[0];
-      const check = validateCouponEligibility(couponRecord, calculatedSubtotal, today);
-
-      if (!check.valid) {
-        return res.status(check.status).json({ message: check.message });
-      }
-
-      serverDiscount = calculateCouponDiscount(couponRecord, calculatedSubtotal);
-    }
-
-    // 3. Tính tổng tiền cuối cùng an toàn phía server
-    const finalTotal = Math.max(0, calculatedSubtotal - serverDiscount);
-
-    // 4. Kiểm tra affiliate
-    let orderIdPrefix = 'ORD';
-    let affRecord = null;
-
-    if (ref && typeof ref === 'string' && ref.trim()) {
-      const cleanRef = ref.trim();
-
-      affRecord = await db.get(
-        'SELECT * FROM affiliates WHERE id = ? OR ctv_code = ? OR ma_ctv = ?',
-        [cleanRef, cleanRef, cleanRef]
-      );
-
-      if (affRecord && affRecord.status === 'approved') {
-        orderIdPrefix = affRecord.ctv_code || affRecord.ma_ctv || 'CTV';
-      }
-    }
-
-    const orderId = `${orderIdPrefix}-${Date.now()}`;
-    const now = new Date().toISOString();
-    const paymentQrContent = payment_qr_content || orderId;
-
-    // 5. Bắt đầu transaction trước mọi thao tác ghi dữ liệu đơn hàng
-    await db.exec('BEGIN TRANSACTION');
-    transactionStarted = true;
-
+    const notifId = `notif-pending-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     await db.run(
-      `INSERT INTO orders (
-        id, user_id, total, subtotal, coupon_code, discount_amount,
-        payment_method, status, created_at, payment_qr_content, payment_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        orderId,
-        req.user.id,
-        finalTotal,
-        calculatedSubtotal,
-        couponRecord ? couponRecord.code : null,
-        serverDiscount,
-        payment_method.trim(),
-        'pending',
-        now,
-        paymentQrContent,
-        'chua_thanh_toan'
-      ]
+      `INSERT INTO affiliate_notifications (id, affiliate_id, order_id, course_id, buyer_name, amount, commission, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [notifId, affRecord.id, orderId, item.course_id, buyerName, item.price, commission, now]
+    );
+
+    const revId = `rev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    await db.run(
+      `INSERT INTO affiliate_revenues (id, affiliate_id, order_id, course_id, buyer_name, order_total, commission_rate, commission_amount, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [revId, affRecord.id, orderId, item.course_id, buyerName, item.price, rate, commission, 'pending', now]
+    );
+  }
+}
+
+async function sendOrderConfirmationEmailAsync(db, orderId, userId, finalTotal, paymentMethod) {
+  try {
+    const user = await db.get('SELECT full_name, email FROM users WHERE id = ?', [userId]);
+    if (!user || !user.email) return;
+
+    const orderItems = await db.all(
+      `SELECT od.*, COALESCE(od.product_name, c.title, cb.title, od.course_id) AS title
+       FROM order_details od
+       LEFT JOIN courses c ON c.id = od.course_id
+       LEFT JOIN combos cb ON cb.id = od.course_id
+       WHERE od.order_id = ?`,
+      [orderId]
+    );
+
+    sendOrderConfirmationEmail(orderId, user.email, user.full_name, {
+      items: orderItems,
+      total: finalTotal,
+      payment_method: paymentMethod
+    }).catch(err => console.error('Failed to send order confirmation email:', err));
+  } catch (err) {
+    console.error('Failed to prepare order confirmation email:', err);
+  }
+}
+
+function isInvalidString(str) {
+  return !str || typeof str !== 'string' || !str.trim();
+}
+
+function validateOrderRequestBody(body) {
+  if (!body || typeof body !== 'object') {
+    return 'Dữ liệu đơn hàng không hợp lệ.';
+  }
+  if (isInvalidString(body.payment_method)) {
+    return 'Vui lòng chọn phương thức thanh toán.';
+  }
+  if (!Array.isArray(body.items) || body.items.length === 0) {
+    return 'Giỏ hàng trống hoặc không hợp lệ.';
+  }
+  return null;
+}
+
+function generateOrderId(affRecord) {
+  let prefix = 'ORD';
+  if (affRecord) {
+    prefix = affRecord.ctv_code || affRecord.ma_ctv || 'ORD';
+  }
+  return `${prefix}-${Date.now()}`;
+}
+
+async function saveOrderTransaction(db, orderData, validatedItems, couponRecord, affRecord, userId, now) {
+  const { orderId, finalTotal, calculatedSubtotal, serverDiscount, paymentMethod, paymentQr } = orderData;
+  await db.exec('BEGIN TRANSACTION');
+  try {
+    await db.run(
+      `INSERT INTO orders (id, user_id, total, subtotal, coupon_code, discount_amount, payment_method, status, created_at, payment_qr_content, payment_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [orderId, userId, finalTotal, calculatedSubtotal, couponRecord ? couponRecord.code : null, serverDiscount, paymentMethod, 'pending', now, paymentQr, 'chua_thanh_toan']
     );
 
     if (couponRecord) {
@@ -711,122 +717,66 @@ app.post('/api/orders', authenticateToken, checkUserStatus, async (req, res) => 
         'UPDATE coupons SET used_count = used_count + 1 WHERE id = ? AND used_count < quantity',
         [couponRecord.id]
       );
-
-      if (couponUpdate.changes !== 1) {
-        throw new Error('Không thể cập nhật lượt sử dụng coupon.');
-      }
+      if (couponUpdate.changes !== 1) throw new Error('Không thể cập nhật lượt sử dụng coupon.');
     }
 
     for (const item of validatedItems) {
       await db.run(
         'INSERT INTO order_details (order_id, course_id, price, product_name) VALUES (?, ?, ?, ?)',
-        [orderId, item.course_id, item.price, item.product_name || item.course_id]
+        [orderId, item.course_id, item.price, item.product_name]
       );
-
-      if (affRecord && affRecord.status === 'approved') {
-        const commRow = await db.get(
-          'SELECT commission_rate FROM affiliate_commissions WHERE course_id = ?',
-          [item.course_id]
-        );
-
-        const rate = commRow ? commRow.commission_rate : 10.0;
-        const commission = Math.round(item.price * rate / 100);
-        const buyer = await db.get(
-          'SELECT full_name FROM users WHERE id = ?',
-          [req.user.id]
-        );
-
-        const notifId = `notif-pending-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-
-        await db.run(
-          `INSERT INTO affiliate_notifications (
-            id, affiliate_id, order_id, course_id, buyer_name,
-            amount, commission, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            notifId,
-            affRecord.id,
-            orderId,
-            item.course_id,
-            buyer?.full_name || 'Khách hàng',
-            item.price,
-            commission,
-            now
-          ]
-        );
-
-        const revId = `rev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-
-        await db.run(
-          `INSERT INTO affiliate_revenues (
-            id, affiliate_id, order_id, course_id, buyer_name,
-            order_total, commission_rate, commission_amount, status, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            revId,
-            affRecord.id,
-            orderId,
-            item.course_id,
-            buyer?.full_name || 'Khách hàng',
-            item.price,
-            rate,
-            commission,
-            'pending',
-            now
-          ]
-        );
-      }
     }
 
-    // 6. Chỉ commit khi tất cả thao tác ghi đều thành công
+    await recordAffiliateRewards(db, affRecord, orderId, validatedItems, userId, now);
     await db.exec('COMMIT');
-    transactionStarted = false;
+  } catch (err) {
+    try { await db.exec('ROLLBACK'); } catch (_) {}
+    throw err;
+  }
+}
 
-    // 7. Email là hậu xử lý, không được làm rollback đơn đã commit
-    try {
-      const user = await db.get(
-        'SELECT full_name, email FROM users WHERE id = ?',
-        [req.user.id]
-      );
+// ================= CHECKOUT / ORDERS =================
+app.post('/api/orders', authenticateToken, checkUserStatus, async (req, res) => {
+  const validationError = validateOrderRequestBody(req.body);
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
+  }
 
-      const orderItems = await db.all(
-        `SELECT od.*,
-                COALESCE(od.product_name, c.title, cb.title, od.course_id) AS title
-         FROM order_details od
-         LEFT JOIN courses c ON c.id = od.course_id
-         LEFT JOIN combos cb ON cb.id = od.course_id
-         WHERE od.order_id = ?`,
-        [orderId]
-      );
+  const { items, payment_method, ref, coupon_code, payment_qr_content } = req.body;
 
-      if (user && user.email) {
-        sendOrderConfirmationEmail(orderId, user.email, user.full_name, {
-          items: orderItems,
-          total: finalTotal,
-          payment_method
-        }).catch(err => console.error('Failed to send order confirmation email:', err));
-      }
-    } catch (emailPreparationError) {
-      console.error('Failed to prepare order confirmation email:', emailPreparationError);
+  try {
+    const db = await getDatabase();
+    const { calculatedSubtotal, validatedItems } = await validateCartItems(db, items);
+    if (validatedItems.length === 0) {
+      return res.status(400).json({ message: 'Không tìm thấy sản phẩm hợp lệ trong giỏ hàng.' });
     }
 
-    return res.status(201).json({
-      message: 'Đặt hàng thành công.',
-      orderId
-    });
+    const { serverDiscount, couponRecord, error: couponErr } = await processServerCoupon(db, coupon_code, calculatedSubtotal);
+    if (couponErr) {
+      return res.status(couponErr.status).json({ message: couponErr.message });
+    }
+
+    const finalTotal = Math.max(0, calculatedSubtotal - serverDiscount);
+    const affRecord = await resolveAffiliatePartner(db, ref);
+    const orderId = generateOrderId(affRecord);
+    const now = new Date().toISOString();
+    const paymentQr = payment_qr_content ? payment_qr_content : orderId;
+
+    await saveOrderTransaction(
+      db,
+      { orderId, finalTotal, calculatedSubtotal, serverDiscount, paymentMethod: payment_method.trim(), paymentQr },
+      validatedItems,
+      couponRecord,
+      affRecord,
+      req.user.id,
+      now
+    );
+
+    sendOrderConfirmationEmailAsync(db, orderId, req.user.id, finalTotal, payment_method);
+
+    return res.status(201).json({ message: 'Đặt hàng thành công.', orderId });
   } catch (error) {
-    if (transactionStarted && db) {
-      try {
-        await db.exec('ROLLBACK');
-        transactionStarted = false;
-        console.log('Order transaction rolled back successfully.');
-      } catch (rollbackError) {
-        console.error('Order rollback failed:', rollbackError);
-      }
-    }
-
     console.error('Create order failed:', error);
-
     return res.status(500).json({
       message: 'Lỗi server.',
       error: error.message
@@ -1106,33 +1056,26 @@ app.get('/api/admin/coupons', authenticateToken, checkUserStatus, requireRole(['
 });
 
 
-function validateCoupon(inputCode, coupon, orderAmount, todayStr = new Date().toISOString().split('T')[0]) {
-  // [Branch 1 / UT-CP-01]: Kiểm tra tính hợp lệ của input mã do người dùng nhập
+function checkCouponBasic(inputCode, coupon) {
   if (!inputCode || typeof inputCode !== 'string' || !inputCode.trim()) {
     return { valid: false, status: 400, message: 'Vui lòng cung cấp mã giảm giá.' };
   }
-
-  // [Branch 2 / UT-CP-02]: Kiểm tra bản ghi coupon có tồn tại trong CSDL không
   if (!coupon) {
     return { valid: false, status: 404, message: 'Mã giảm giá không tồn tại.' };
   }
-
-  // [Branch 3 / UT-CP-03]: Kiểm tra trạng thái coupon có đang kích hoạt không
   if (coupon.status !== 'active') {
     return { valid: false, status: 400, message: 'Mã giảm giá đã bị vô hiệu hóa.' };
   }
+  return null;
+}
 
-  // [Branch 4 / UT-CP-04]: Kiểm tra hạn sử dụng so với ngày hiện tại
+function checkCouponLimits(coupon, orderAmount, todayStr) {
   if (coupon.expired_date < todayStr) {
     return { valid: false, status: 400, message: 'Mã giảm giá đã hết hạn sử dụng.' };
   }
-
-  // [Branch 5 / UT-CP-05]: Kiểm tra số lượt đã sử dụng so với tổng số lượng phát hành
   if (coupon.used_count >= coupon.quantity) {
     return { valid: false, status: 400, message: 'Mã giảm giá đã hết lượt sử dụng.' };
   }
-
-  // [Branch 6 / UT-CP-06]: Kiểm tra điều kiện giá trị đơn hàng tối thiểu
   const minOrder = Number(coupon.min_order_amount) || 0;
   const orderTotal = Math.max(0, Number(orderAmount) || 0);
   if (minOrder > 0 && orderTotal < minOrder) {
@@ -1143,27 +1086,33 @@ function validateCoupon(inputCode, coupon, orderAmount, todayStr = new Date().to
       min_order_amount: minOrder,
     };
   }
+  return null;
+}
 
-  // [Branch 7 & 8 / UT-CP-07 & UT-CP-09]: Tính toán mức giảm theo % hoặc số tiền cố định
+function computeCouponDiscount(coupon, orderAmount) {
+  const orderTotal = Math.max(0, Number(orderAmount) || 0);
   const discountVal = Number(coupon.discount) || 0;
   const isPercent = coupon.discount_type === 'percent' || (!coupon.discount_type && discountVal <= 100);
-  let calculatedDiscount = 0;
 
-  if (isPercent) {
-    // Branch 7: Giảm theo tỷ lệ phần trăm
-    calculatedDiscount = Math.round(orderTotal * discountVal / 100);
-  } else {
-    // Branch 8 & 10: Giảm cố định & chặn không để giảm vượt quá tổng tiền đơn
-    calculatedDiscount = Math.min(orderTotal, discountVal);
-  }
+  let calculated = isPercent
+    ? Math.round(orderTotal * discountVal / 100)
+    : Math.min(orderTotal, discountVal);
 
-  // [Branch 9 / UT-CP-08]: Áp dụng mức giảm trần tối đa (max_discount) nếu được cấu hình
   const maxCap = Number(coupon.max_discount) || 0;
   if (maxCap > 0) {
-    calculatedDiscount = Math.min(calculatedDiscount, maxCap);
+    calculated = Math.min(calculated, maxCap);
   }
+  return calculated;
+}
 
-  // Trả về kết quả áp dụng coupon thành công (HTTP 200)
+function validateCoupon(inputCode, coupon, orderAmount, todayStr = new Date().toISOString().split('T')[0]) {
+  const basicErr = checkCouponBasic(inputCode, coupon);
+  if (basicErr) return basicErr;
+
+  const limitsErr = checkCouponLimits(coupon, orderAmount, todayStr);
+  if (limitsErr) return limitsErr;
+
+  const calculatedDiscount = computeCouponDiscount(coupon, orderAmount);
   return {
     valid: true,
     status: 200,
@@ -1184,22 +1133,39 @@ function calculateCouponDiscount(coupon, subtotal) {
   return res.calculated_discount || 0;
 }
 
+function pickVal(val, fallback, defaultVal = null) {
+  if (val !== undefined) return val;
+  if (fallback !== undefined && fallback !== null) return fallback;
+  return defaultVal;
+}
+
+function parseNum(val, fallback, defaultNum = 0) {
+  if (val !== undefined) return Number(val) || 0;
+  if (fallback !== undefined && fallback !== null) return Number(fallback) || 0;
+  return defaultNum;
+}
+
+function normalizeCouponCode(code, fallback) {
+  if (code !== undefined) {
+    return String(code).trim().toUpperCase();
+  }
+  return fallback;
+}
+
 // Helper: Normalize coupon payload
 function normalizeCouponPayload(body, existing = {}) {
   return {
-    code: body.code !== undefined ? String(body.code).trim().toUpperCase() : existing.code,
-    discount: body.discount !== undefined ? Number(body.discount) : existing.discount,
-    quantity: body.quantity !== undefined ? Number(body.quantity) : existing.quantity,
-    used_count: body.used_count !== undefined ? Number(body.used_count) : (existing.used_count || 0),
-    expired_date: body.expired_date !== undefined ? body.expired_date : existing.expired_date,
-    status: body.status !== undefined ? body.status : (existing.status || 'active'),
-    usable_by: body.usable_by !== undefined ? body.usable_by : (existing.usable_by || 'user'),
-    description: body.description !== undefined ? body.description : (existing.description || null),
-    discount_type: body.discount_type !== undefined ? body.discount_type : (existing.discount_type || 'percent'),
-    max_discount: body.max_discount !== undefined ? Number(body.max_discount) : (existing.max_discount || 0),
-    min_order_amount: body.min_order_amount !== undefined
-      ? Number(body.min_order_amount)
-      : (existing.min_order_amount || 0),
+    code: normalizeCouponCode(body.code, existing.code),
+    discount: parseNum(body.discount, existing.discount),
+    quantity: parseNum(body.quantity, existing.quantity),
+    used_count: parseNum(body.used_count, existing.used_count, 0),
+    expired_date: pickVal(body.expired_date, existing.expired_date),
+    status: pickVal(body.status, existing.status, 'active'),
+    usable_by: pickVal(body.usable_by, existing.usable_by, 'user'),
+    description: pickVal(body.description, existing.description, null),
+    discount_type: pickVal(body.discount_type, existing.discount_type, 'percent'),
+    max_discount: parseNum(body.max_discount, existing.max_discount, 0),
+    min_order_amount: parseNum(body.min_order_amount, existing.min_order_amount, 0),
   };
 }
 
