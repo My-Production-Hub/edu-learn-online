@@ -730,7 +730,11 @@ async function saveOrderTransaction(db, orderData, validatedItems, couponRecord,
     await recordAffiliateRewards(db, affRecord, orderId, validatedItems, userId, now);
     await db.exec('COMMIT');
   } catch (err) {
-    try { await db.exec('ROLLBACK'); } catch (_) {}
+    try {
+      await db.exec('ROLLBACK');
+    } catch (rbErr) {
+      console.error('Rollback error:', rbErr);
+    }
     throw err;
   }
 }
@@ -751,7 +755,8 @@ app.post('/api/orders', authenticateToken, checkUserStatus, async (req, res) => 
       return res.status(400).json({ message: 'Không tìm thấy sản phẩm hợp lệ trong giỏ hàng.' });
     }
 
-    const { serverDiscount, couponRecord, error: couponErr } = await processServerCoupon(db, coupon_code, calculatedSubtotal);
+    const { serverDiscount, couponRecord, error: couponErr } =
+      await processServerCoupon(db, coupon_code, calculatedSubtotal);
     if (couponErr) {
       return res.status(couponErr.status).json({ message: couponErr.message });
     }
