@@ -1276,15 +1276,16 @@ app.delete('/api/admin/coupons/:id', authenticateToken, checkUserStatus, require
 
 app.post('/api/coupons/validate', async (req, res) => {
   const { code, order_amount } = req.body;
-  if (!code) {
+  const cleanCode = (code || '').toString().trim().toUpperCase();
+  if (!cleanCode) {
     return res.status(400).json({ message: 'Vui lòng cung cấp mã giảm giá.' });
   }
   try {
     const db = await getDatabase();
-    const coupon = await db.get("SELECT * FROM coupons WHERE UPPER(code) = ?", [code.toUpperCase()]);
+    const coupon = await db.get("SELECT * FROM coupons WHERE UPPER(TRIM(code)) = ?", [cleanCode]);
     const today = new Date().toISOString().split('T')[0];
 
-    const result = validateCoupon(code, coupon, order_amount, today);
+    const result = validateCoupon(cleanCode, coupon, order_amount, today);
     if (!result.valid) {
       return res.status(result.status).json(result);
     }

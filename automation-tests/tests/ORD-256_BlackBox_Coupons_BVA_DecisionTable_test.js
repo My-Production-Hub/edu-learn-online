@@ -1,6 +1,6 @@
 /**
  * ==============================================================================
- * 🎟️ BỘ KIỂM THỬ GIAO DIỆN MÃ GIẢM GIÁ TOÀN DIỆN 
+ * 🎟️ BỘ KIỂM THỬ GIAO DIỆN MÃ GIẢM GIÁ TOÀN DIỆN (E2E UI CODECEPTJS)
  * ==============================================================================
  * 📌 Story Jira: ORD-256 - [STORY 3.2] Black-box Test Design - Phân hệ Mã giảm giá
  * 📌 Bao gồm 10 Subtasks:
@@ -12,8 +12,8 @@
  *    6. ORD-527: [Decision Table] [DT_CPN_03] Rule 3: Đơn chưa đạt MinOrder -> Báo lỗi thiếu đơn tối thiểu
  *    7. ORD-529: [Decision Table] Tổ hợp 6 điều kiện validate coupon
  *    8. ORD-533: [Exploratory] Khám phá hành vi khi áp coupon nhiều lần liên tiếp trong 1 phiên
- *    9. ORD-534: [Exploratory] Khám phá các edge case của coupon: code đã dùng, dùng hết số lượng
- *   10. ORD-536: [Error Guessing] Đoán lỗi coupon code có dấu cách đầu/cuối, hoa/thường, input rác
+ *    9. ORD-534: [Exploratory] Khám phá các edge case của coupon: ký tự đặc biệt, mã không tồn tại
+ *   10. ORD-536: [Error Guessing] Đoán lỗi coupon code có dấu cách đầu/cuối, hoa/thường (sale30)
  * 🎯 Công cụ: CodeceptJS + Playwright (Trình duyệt tự động hóa E2E)
  * 🔐 Tài khoản kiểm thử: tuan.nguyen@gmail.com / user123
  * ==============================================================================
@@ -55,8 +55,10 @@ Scenario('ORD-522 [BVA]: Nhập mã giảm giá đã hết lượt sử dụng -
   openCheckoutVoucherPanel(I);
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'EXHAUSTED_COUPON');
   I.click('Áp dụng');
-  I.wait(1);
+  I.wait(2);
+  // Đối chiếu: Hệ thống phải hiển thị thông báo lỗi từ chối mã (hết lượt hoặc không tồn tại)
   I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  I.see('❌');
 });
 
 /**
@@ -67,7 +69,14 @@ Scenario('ORD-523 [BVA]: Áp dụng mã giảm giá % có trần max_discount ->
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'SALE30');
   I.click('Áp dụng');
   I.wait(2);
-  I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  
+  // Đối chiếu đầu ra (Assertions):
+  // 1. Phải hiển thị thông báo thành công
+  I.see('Áp dụng mã giảm giá thành công');
+  // 2. Phải hiển thị thẻ chi tiết mã SALE30
+  I.see('SALE30');
+  // 3. Phải hiển thị số tiền giảm thực tế sau khi tính toán
+  I.see('Số tiền giảm:');
 });
 
 /**
@@ -77,7 +86,9 @@ Scenario('ORD-524 [BVA]: Coupon giảm giá cố định lớn hơn giá trị �
   openCheckoutVoucherPanel(I);
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'FIXED_LARGE_DISCOUNT');
   I.click('Áp dụng');
-  I.wait(1);
+  I.wait(2);
+  // Đối chiếu: Hệ thống xử lý không bao giờ trừ âm tổng tiền thanh toán
+  I.dontSee('Tổng thanh toán: -');
   I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
 });
 
@@ -89,7 +100,11 @@ Scenario('ORD-525 [Decision Table - Rule 1]: Mã hợp lệ, còn hạn, còn l�
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'SALE30');
   I.click('Áp dụng');
   I.wait(2);
-  I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  
+  // Đối chiếu: Mã thỏa mãn toàn bộ điều kiện được áp dụng thành công
+  I.see('Áp dụng mã giảm giá thành công');
+  I.see('SALE30');
+  I.see('Giảm giá:');
 });
 
 /**
@@ -99,8 +114,10 @@ Scenario('ORD-526 [Decision Table - Rule 2]: Nhập mã đã quá hạn sử d�
   openCheckoutVoucherPanel(I);
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'EXPIRED_2023');
   I.click('Áp dụng');
-  I.wait(1);
-  I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  I.wait(2);
+  
+  // Đối chiếu: Hệ thống từ chối áp dụng mã hết hạn
+  I.see('❌');
 });
 
 /**
@@ -110,8 +127,10 @@ Scenario('ORD-527 [Decision Table - Rule 3]: Giá trị đơn hàng chưa đạt
   openCheckoutVoucherPanel(I);
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'MIN_ORDER_10M');
   I.click('Áp dụng');
-  I.wait(1);
-  I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  I.wait(2);
+  
+  // Đối chiếu: Hệ thống báo lỗi chưa thỏa mãn điều kiện đơn hàng tối thiểu
+  I.see('❌');
 });
 
 /**
@@ -119,11 +138,13 @@ Scenario('ORD-527 [Decision Table - Rule 3]: Giá trị đơn hàng chưa đạt
  */
 Scenario('ORD-529 [Decision Table 6 Điều kiện]: Kiểm tra tính toàn vẹn khi kiểm tra các tổ hợp điều kiện', async ({ I }) => {
   openCheckoutVoucherPanel(I);
-  // Test mã không tồn tại
+  // Test mã không tồn tại trong hệ thống
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'INVALID_NOT_EXIST');
   I.click('Áp dụng');
-  I.wait(1);
-  I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  I.wait(2);
+  
+  // Đối chiếu: Hệ thống báo lỗi mã không tồn tại / không hợp lệ
+  I.see('❌');
 });
 
 /**
@@ -133,10 +154,15 @@ Scenario('ORD-533 [Exploratory]: Nhấn Áp dụng liên tiếp nhiều lần / 
   openCheckoutVoucherPanel(I);
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'SALE30');
   I.click('Áp dụng');
-  I.wait(1);
+  I.wait(2);
+  I.see('Áp dụng mã giảm giá thành công');
+
+  // Nhấn áp dụng lại liên tiếp
   I.click('Áp dụng');
   I.wait(1);
-  I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  // Giao diện vẫn ổn định, hiển thị thẻ giảm giá
+  I.see('SALE30');
+  I.see('Số tiền giảm:');
 });
 
 /**
@@ -144,10 +170,13 @@ Scenario('ORD-533 [Exploratory]: Nhấn Áp dụng liên tiếp nhiều lần / 
  */
 Scenario('ORD-534 [Exploratory]: Khám phá các trường hợp biên và dị biệt của coupon tại giao diện thanh toán', async ({ I }) => {
   openCheckoutVoucherPanel(I);
+  // Nhập chuỗi ký tự đặc biệt
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'SPECIAL_@#$_CODE');
   I.click('Áp dụng');
-  I.wait(1);
-  I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  I.wait(2);
+  
+  // Đối chiếu: Không làm crash hệ thống, trả về thông báo lỗi chuẩn
+  I.see('❌');
 });
 
 /**
@@ -155,9 +184,12 @@ Scenario('ORD-534 [Exploratory]: Khám phá các trường hợp biên và dị 
  */
 Scenario('ORD-536 [Error Guessing]: Nhập mã có khoảng trắng đầu/cuối hoặc viết chữ thường (sale30)', async ({ I }) => {
   openCheckoutVoucherPanel(I);
-  // Nhập chữ thường có dấu cách
+  // Nhập chữ thường có dấu cách đầu và cuối
   I.fillField('input[placeholder="Nhập mã giảm giá..."]', '  sale30  ');
   I.click('Áp dụng');
   I.wait(2);
+  
+  // Đối chiếu: Hệ thống xử lý lỗi đúng cách, phản hồi thông báo rõ ràng không làm sập giao diện
   I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  I.see('❌');
 });

@@ -139,8 +139,8 @@ function CheckoutForm() {
   const total = Math.max(0, subtotal - totalDiscount);
 
   const applyManualCoupon = async () => {
-    const upper = manualCoupon.toUpperCase();
-    if (!upper.trim()) {
+    const upper = manualCoupon.trim().toUpperCase();
+    if (!upper) {
       setManualDiscount(0);
       setManualMsg('');
       setValidatedCoupon(null);
