@@ -49,6 +49,8 @@ Scenario('ORD-646 [UI-02]: Mở panel Voucher -> Hiển thị form "NHẬP MÃ T
   I.click('Chọn voucher giảm giá');
   I.waitForText('NHẬP MÃ THỦ CÔNG', 15);
   I.see('NHẬP MÃ THỦ CÔNG');
+  I.seeElement('input[placeholder="Nhập mã giảm giá..."]');
+  I.see('Áp dụng');
 });
 
 /**
@@ -59,10 +61,15 @@ Scenario('ORD-646 [UI-03]: Nhập mã giảm giá không hợp lệ -> Hệ th�
   I.amOnPage('/courses/course-1');
   I.waitForText('Mua ngay', 15);
   I.click('Mua ngay');
+  I.waitInUrl('/checkout?buynow=true', 10);
   I.waitForText('Chọn voucher giảm giá', 15);
   I.click('Chọn voucher giảm giá');
   I.waitForText('NHẬP MÃ THỦ CÔNG', 15);
-  I.see('NHẬP MÃ THỦ CÔNG');
+  I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'INVALID_TEST_CODE');
+  I.click('Áp dụng');
+  I.wait(2);
+  // Đối chiếu: Hệ thống hiển thị thông báo lỗi
+  I.see('❌');
 });
 
 /**
@@ -75,7 +82,11 @@ Scenario('ORD-646 [UI-04]: Đóng và mở lại panel Voucher trên giao diện
   I.click('Mua ngay');
   I.waitInUrl('/checkout?buynow=true', 10);
   I.waitForText('Chọn voucher giảm giá', 15);
+  // Mở panel
   I.click('Chọn voucher giảm giá');
   I.waitForText('NHẬP MÃ THỦ CÔNG', 15);
   I.see('NHẬP MÃ THỦ CÔNG');
+  // Đóng panel
+  I.click('Chọn voucher giảm giá');
+  I.wait(1);
 });

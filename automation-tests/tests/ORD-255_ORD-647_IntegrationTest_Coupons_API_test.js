@@ -102,6 +102,11 @@ Scenario('ORD-647 [UI-05]: Học viên mua khóa học -> Mở panel Voucher t�
   I.click('Chọn voucher giảm giá');
   I.waitForText('NHẬP MÃ THỦ CÔNG', 15);
   I.see('NHẬP MÃ THỦ CÔNG');
+  I.fillField('input[placeholder="Nhập mã giảm giá..."]', 'SALE30');
+  I.click('Áp dụng');
+  I.wait(2);
+  I.see('Áp dụng mã giảm giá thành công');
+  I.see('SALE30');
 });
 
 /**
