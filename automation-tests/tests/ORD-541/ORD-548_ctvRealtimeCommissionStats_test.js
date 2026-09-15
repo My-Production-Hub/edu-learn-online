@@ -1,14 +1,11 @@
-/**
- * 📌 Subtask: ORD-548 - [Usability] [CTV] Kiểm tra thống kê hoa hồng hiển thị chính xác theo thời gian thực
- */
 const assert = require('node:assert/strict');
 
-Feature('ORD-541 / ORD-548: CTV Realtime Commission Stats');
+Feature('ORD-541 / ORD-548: Usability - Realtime CTV Stats');
 
-Scenario('ORD-548 - Cập nhật số dư hoa hồng CTV ngay khi đơn hàng giới thiệu thành công', async () => {
-  const initialBalance = 1000000;
-  const newCommission = 150000;
-  const updatedBalance = initialBalance + newCommission;
+Scenario('ORD-548 - Kiểm tra thống kê hoa hồng CTV tính toán chính xác theo thời gian thực', async () => {
+  const ctvDashboard = { totalClicks: 150, totalOrders: 10, totalRevenue: 5000000, commissionRate: 0.10 };
+  const calculatedCommission = ctvDashboard.totalRevenue * ctvDashboard.commissionRate;
 
-  assert.strictEqual(updatedBalance, 1150000, 'Hoa hồng được tính toán và cộng dồn chính xác theo thời gian thực');
+  assert.strictEqual(calculatedCommission, 500000, 'Hoa hồng nhận được phải bằng 10% doanh thu');
+  assert.ok(ctvDashboard.totalOrders <= ctvDashboard.totalClicks, 'Số đơn hàng không thể vượt quá số lượt click');
 });

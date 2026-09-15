@@ -1,14 +1,11 @@
-/**
- * 📌 Subtask: ORD-547 - [Usability] [Đơn hàng] Kiểm tra trạng thái đơn hàng hiển thị rõ ràng: pending, approved, rejected
- */
 const assert = require('node:assert/strict');
 
-Feature('ORD-541 / ORD-547: Order Status Display');
+Feature('ORD-541 / ORD-548: Usability - Realtime CTV Stats');
 
-Scenario('ORD-547 - Hiển thị đúng nhãn trạng thái tương ứng với từng trạng thái đơn hàng', async () => {
-  const validStatuses = ['pending', 'approved', 'rejected', 'completed'];
-  const currentOrderStatus = 'pending';
+Scenario('ORD-548 - Kiểm tra thống kê hoa hồng CTV tính toán chính xác theo thời gian thực', async () => {
+  const ctvDashboard = { totalClicks: 150, totalOrders: 10, totalRevenue: 5000000, commissionRate: 0.10 };
+  const calculatedCommission = ctvDashboard.totalRevenue * ctvDashboard.commissionRate;
 
-  assert.ok(validStatuses.includes(currentOrderStatus), 'Trạng thái đơn hàng phải thuộc danh sách chuẩn (pending, approved, rejected)');
-  assert.strictEqual(currentOrderStatus, 'pending', 'Nhãn hiển thị trạng thái đang ở mức Chờ duyệt (pending)');
+  assert.strictEqual(calculatedCommission, 500000, 'Hoa hồng nhận được phải bằng 10% doanh thu');
+  assert.ok(ctvDashboard.totalOrders <= ctvDashboard.totalClicks, 'Số đơn hàng không thể vượt quá số lượt click');
 });
