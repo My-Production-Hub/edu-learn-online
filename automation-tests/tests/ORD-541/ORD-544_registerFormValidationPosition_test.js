@@ -1,16 +1,9 @@
-const assert = require('node:assert/strict');
+Feature('ORD-544: Register Form Validation Position');
 
-Feature('ORD-541 / ORD-544: Usability - Registration Field Validation');
-
-Scenario('ORD-544 - Kiểm tra form đăng ký hiển thị lỗi validation đúng vị trí tương ứng', async () => {
-  const formValidationState = {
-    email: { error: 'Email không đúng định dạng', isValid: false },
-    password: { error: 'Mật khẩu phải có ít nhất 6 ký tự', isValid: false },
-    fullName: { error: null, isValid: true }
-  };
-
-  assert.strictEqual(formValidationState.email.isValid, false);
-  assert.strictEqual(formValidationState.email.error, 'Email không đúng định dạng');
-  assert.strictEqual(formValidationState.password.error, 'Mật khẩu phải có ít nhất 6 ký tự');
-  assert.strictEqual(formValidationState.fullName.isValid, true);
+Scenario('ORD-544 - Kiểm tra vị trí hiển thị thông báo lỗi validate form đăng ký', async ({ I }) => {
+  I.amOnPage('/register');
+  I.waitForText('Đăng ký tài khoản', 15);
+  I.click('Đăng ký');
+  I.waitForText('Vui lòng nhập họ và tên', 15);
+  I.see('Vui lòng nhập email');
 });
