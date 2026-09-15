@@ -12,7 +12,7 @@ Scenario('ORD-543 - Kiểm tra thông báo lỗi thân thiện và không bị r
     stackTrace: null
   };
 
-  assert.strictEqual(apiResponse.status, 400, 'HTTP status trả về 400 Bad Request');
+  assert.strictEqual(apiResponse.status, 400, 'HTTP status trả về 400 Bad Request khi có lỗi người dùng');
   assert.ok(!apiResponse.message.includes('Error 500'), 'Thông báo không chứa mã lỗi thô Error 500');
-  assert.strictEqual(apiResponse.stackTrace, null, 'Tuyệt đối không rò rỉ stack trace ra phía client');
+  assert.strictEqual(apiResponse.stackTrace, null, 'Tuyệt đối không rò rỉ vết lỗi hệ thống (stack trace) ra phía client');
 });
