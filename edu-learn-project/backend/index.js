@@ -17,11 +17,29 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://localhost:5000',
-  'http://127.0.0.1:5000'
+  'http://127.0.0.1:5000',
+  'https://edulearnonline.com',
+  'https://admin.edulearnonline.com'
 ];
+
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  try {
+    const parsed = new URL(origin);
+    const isLocal = (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
+    if (isLocal && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {
+      return true;
+    }
+  } catch (_e) {
+    return false;
+  }
+  return false;
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
     return callback(new Error('CORS blocked: Origin not allowed by CORS policy'));
@@ -578,25 +596,28 @@ async function resolveItemPriceAndTitle(db, item) {
     const hasComboSale = combo.sale_price !== null && combo.sale_price !== undefined;
     return { price: hasComboSale ? combo.sale_price : combo.price, title: combo.title };
   }
-  const fallbackPrice = Math.max(0, Number(item.price) || 0);
-  const fallbackTitle = typeof item.product_name === 'string' ? item.product_name : String(item.course_id);
-  return { price: fallbackPrice, title: fallbackTitle };
+  return null;
 }
 
 async function validateCartItems(db, items) {
   let calculatedSubtotal = 0;
   const validatedItems = [];
   for (const item of items) {
-    if (!item || typeof item !== 'object' || !item.course_id) continue;
-    const { price, title } = await resolveItemPriceAndTitle(db, item);
-    calculatedSubtotal += price;
+    if (!item || typeof item !== 'object' || !item.course_id) {
+      return { error: 'Sản phẩm trong giỏ hàng không hợp lệ.' };
+    }
+    const resolved = await resolveItemPriceAndTitle(db, item);
+    if (!resolved) {
+      return { error: `Sản phẩm '${item.course_id}' không tồn tại trong hệ thống.` };
+    }
+    calculatedSubtotal += resolved.price;
     validatedItems.push({
       course_id: String(item.course_id),
-      price,
-      product_name: title
+      price: resolved.price,
+      product_name: resolved.title
     });
   }
-  return { calculatedSubtotal, validatedItems };
+  return { calculatedSubtotal, validatedItems, error: null };
 }
 
 async function processServerCoupon(db, couponCode, subtotal) {
@@ -750,9 +771,9 @@ app.post('/api/orders', authenticateToken, checkUserStatus, async (req, res) => 
 
   try {
     const db = await getDatabase();
-    const { calculatedSubtotal, validatedItems } = await validateCartItems(db, items);
-    if (validatedItems.length === 0) {
-      return res.status(400).json({ message: 'Không tìm thấy sản phẩm hợp lệ trong giỏ hàng.' });
+    const { calculatedSubtotal, validatedItems, error: itemErr } = await validateCartItems(db, items);
+    if (itemErr || validatedItems.length === 0) {
+      return res.status(400).json({ message: itemErr || 'Không tìm thấy sản phẩm hợp lệ trong giỏ hàng.' });
     }
 
     const { serverDiscount, couponRecord, error: couponErr } =
@@ -1635,10 +1656,16 @@ app.put('/api/admin/orders/:id/status', authenticateToken, checkUserStatus, requ
     return res.status(400).json({ message: 'Trạng thái đơn hàng không hợp lệ.' });
   }
 
+  let db;
   try {
-    const db = await getDatabase();
+    db = await getDatabase();
+    await db.exec('BEGIN TRANSACTION');
+
     const order = await db.get("SELECT * FROM orders WHERE id = ?", [req.params.id]);
-    if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng.' });
+    if (!order) {
+      await db.exec('ROLLBACK');
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng.' });
+    }
 
     const newPaymentStatus = status === 'completed' ? 'da_thanh_toan' : 'chua_thanh_toan';
 
@@ -1675,12 +1702,21 @@ app.put('/api/admin/orders/:id/status', authenticateToken, checkUserStatus, requ
       await db.run("UPDATE affiliate_revenues SET status = 'cancelled' WHERE order_id = ?", [req.params.id]);
     }
 
+    await db.exec('COMMIT');
+
     res.json({
       message: 'Đã cập nhật trạng thái đơn hàng.',
       status,
       payment_status: newPaymentStatus
     });
   } catch (error) {
+    if (db) {
+      try {
+        await db.exec('ROLLBACK');
+      } catch (rbErr) {
+        console.error('Rollback error on order status update:', rbErr.message);
+      }
+    }
     res.status(500).json({ message: 'Lỗi server.', error: error.message });
   }
 });
@@ -1692,10 +1728,16 @@ app.patch('/api/admin/orders/:id/payment-status', authenticateToken, checkUserSt
     return res.status(400).json({ message: 'Trạng thái thanh toán không hợp lệ.' });
   }
 
+  let db;
   try {
-    const db = await getDatabase();
+    db = await getDatabase();
+    await db.exec('BEGIN TRANSACTION');
+
     const order = await db.get("SELECT * FROM orders WHERE id = ?", [req.params.id]);
-    if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng.' });
+    if (!order) {
+      await db.exec('ROLLBACK');
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng.' });
+    }
 
     const newOrderStatus = payment_status === 'da_thanh_toan' ? 'completed' : 'pending';
 
@@ -1727,12 +1769,21 @@ app.patch('/api/admin/orders/:id/payment-status', authenticateToken, checkUserSt
       }
     }
 
+    await db.exec('COMMIT');
+
     res.json({
       message: 'Đã cập nhật trạng thái thanh toán.',
       payment_status,
       status: newOrderStatus
     });
   } catch (error) {
+    if (db) {
+      try {
+        await db.exec('ROLLBACK');
+      } catch (rbErr) {
+        console.error('Rollback error on payment status update:', rbErr.message);
+      }
+    }
     res.status(500).json({ message: 'Lỗi server.', error: error.message });
   }
 });

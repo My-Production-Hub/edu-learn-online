@@ -18,7 +18,7 @@ Biểu mẫu đăng ký yêu cầu người dùng điền đầy đủ và chín
 | **Họ và tên** | ✅ | Không được để trống | Ví dụ: `Nguyễn Văn A` |
 | **Email** | ✅ | Định dạng email hợp lệ (`user@domain.com`), chưa được đăng ký trong hệ thống | Ví dụ: `nguyenvana@gmail.com` |
 | **Số điện thoại** | ✅ | Gồm đúng **10 chữ số**, bắt đầu bằng các đầu số hợp lệ của Việt Nam: `03`, `05`, `07`, `08`, `09` | Ví dụ: `0912345678` |
-| **Mật khẩu** | ✅ | Tối thiểu **6 ký tự** | Ví dụ: `matkhau123` |
+| **Mật khẩu** | ✅ | Tối thiểu **8 ký tự**, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt | Ví dụ: `EduLearn@2026` |
 | **Xác nhận mật khẩu** | ✅ | Phải trùng khớp 100% với giá trị đã nhập ở ô Mật khẩu | Phải giống chính xác mật khẩu |
 
 ![Giao diện Đăng ký tài khoản](../../images/01-dang-ky.png)

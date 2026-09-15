@@ -1,7 +1,7 @@
 # BÁO CÁO PHÂN TÍCH ĐỘ ĐO MÃ NGUỒN (CODE METRICS ANALYSIS - ORD-670)
 
 ## 1. Tổng quan các chỉ số chất lượng
-- **Tổng số tệp mã nguồn phân tích:** 88 files (Backend & Frontend)
+- **Tổng số tệp mã nguồn phân tích:** 89 files (Backend & Frontend)
 - **Maintainability Index (MI) trung bình:** **75/100** (Ngưỡng đạt tiêu chuẩn: $\ge 75/100$ ➔ **PASSED ✅**)
 - **Cyclomatic Complexity (CC) trung bình:** **4.0** (Ngưỡng đạt tiêu chuẩn: $\le 10$ ➔ **PASSED ✅**)
 - **Nesting Depth trung bình:** **$\le 2$ tầng** (Ngưỡng đạt tiêu chuẩn: $\le 3$ ➔ **PASSED ✅**)
