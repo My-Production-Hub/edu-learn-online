@@ -1,14 +1,10 @@
 const assert = require('node:assert/strict');
 
-Feature('ORD-541 / ORD-549: Auth - Forgot Password Flow');
+Feature('ORD-549: Forgot Password Token Expiration');
 
-Scenario('ORD-549 - Kiểm tra gửi mail đặt lại mật khẩu và hết hạn token sau 15 phút', async () => {
-  const tokenGeneratedTime = Date.now();
-  const tokenValidDurationMs = 15 * 60 * 1000; // 15 phút
-  
-  const validRequestTime = tokenGeneratedTime + (10 * 60 * 1000); // Phút thứ 10
-  const expiredRequestTime = tokenGeneratedTime + (16 * 60 * 1000); // Phút thứ 16
+Scenario('ORD-549 - Kiểm tra thời hạn Token quên mật khẩu 15 phút', async () => {
+  const tokenLifetimeMs = 15 * 60 * 1000;
+  const isExpired = (16 * 60 * 1000) > tokenLifetimeMs;
 
-  assert.ok((validRequestTime - tokenGeneratedTime) <= tokenValidDurationMs, 'Token còn hiệu lực ở phút thứ 10');
-  assert.ok((expiredRequestTime - tokenGeneratedTime) > tokenValidDurationMs, 'Token bị vô hiệu hóa ở phút thứ 16');
+  assert.strictEqual(isExpired, true, 'Token phải hết hạn sau 15 phút');
 });

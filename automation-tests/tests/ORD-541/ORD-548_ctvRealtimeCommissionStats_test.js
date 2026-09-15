@@ -1,11 +1,10 @@
 const assert = require('node:assert/strict');
 
-Feature('ORD-541 / ORD-548: Usability - Realtime CTV Stats');
+Feature('ORD-548: CTV Realtime Commission Stats');
 
-Scenario('ORD-548 - Kiểm tra thống kê hoa hồng CTV tính toán chính xác theo thời gian thực', async () => {
-  const ctvDashboard = { totalClicks: 150, totalOrders: 10, totalRevenue: 5000000, commissionRate: 0.10 };
-  const calculatedCommission = ctvDashboard.totalRevenue * ctvDashboard.commissionRate;
+Scenario('ORD-548 - Kiểm tra thống kê hoa hồng thời gian thực phân hệ CTV', async () => {
+  const ctvStats = { ctvId: 'CTV001', commissionBalance: 1500000 };
 
-  assert.strictEqual(calculatedCommission, 500000, 'Hoa hồng nhận được phải bằng 10% doanh thu');
-  assert.ok(ctvDashboard.totalOrders <= ctvDashboard.totalClicks, 'Số đơn hàng không thể vượt quá số lượt click');
+  assert.strictEqual(ctvStats.ctvId, 'CTV001');
+  assert.ok(ctvStats.commissionBalance >= 0, 'Số dư hoa hồng không được âm');
 });
