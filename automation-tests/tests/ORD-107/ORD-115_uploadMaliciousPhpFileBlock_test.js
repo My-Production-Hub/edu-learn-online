@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 
 Feature('ORD-107 / ORD-115: Malicious File Upload Prevention');
 
-Scenario('ORD-115 - Chặn tải lên các file thực thi độc hại (.php, .exe, .sh) khi tải minh chứng thanh toán', async () => {
+Scenario('ORD-115 - Chặn tải lên các file thực thi độc hại (.php) khi tải minh chứng thanh toán', async () => {
   const uploadPayload = {
     fileName: 'shell.php',
     fileType: 'application/x-php'

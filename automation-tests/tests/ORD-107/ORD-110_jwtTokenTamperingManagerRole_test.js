@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 
 Feature('ORD-107 / ORD-110: JWT Token Forgery & Role Escalation Prevention');
 
-Scenario('ORD-110 - Từ chối truy cập khi JWT Token bị chỉnh sửa payload vai trò (Role Escaping)', async () => {
+Scenario('ORD-110 - Từ chối truy cập khi JWT Token bị chỉnh sửa payload vai trò (Role Escalation)', async () => {
   const forgedTokenResponse = {
     status: 401,
     message: 'Invalid or tampered token'
