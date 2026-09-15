@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/utils/api';
 import Image from 'next/image';
+import Pagination from '@/components/ui/Pagination';
 
 type Category = { id: string; name: string; created_at: string };
 type Blog = {
@@ -449,31 +450,11 @@ export default function AdminBlogsPage() {
                 )}
               </tbody>
             </table>
-            {totalBlogPages > 1 && (
-              <div className="flex justify-between items-center px-6 py-4 bg-gray-950/40 border-t border-gray-800 text-xs">
-                <p className="text-gray-400">
-                  Hiển thị trang <span className="font-semibold text-white">{blogPage}</span> trên <span className="font-semibold text-white">{totalBlogPages}</span>
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setBlogPage(p => Math.max(1, p - 1))}
-                    disabled={blogPage === 1}
-                    className="px-3 py-1.5 rounded-lg border border-gray-800 bg-gray-900 text-gray-300 hover:bg-gray-800 disabled:opacity-40 disabled:hover:bg-gray-900 transition font-bold"
-                  >
-                    Trước
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBlogPage(p => Math.min(totalBlogPages, p + 1))}
-                    disabled={blogPage === totalBlogPages}
-                    className="px-3 py-1.5 rounded-lg border border-gray-800 bg-gray-900 text-gray-300 hover:bg-gray-800 disabled:opacity-40 disabled:hover:bg-gray-900 transition font-bold"
-                  >
-                    Sau
-                  </button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              currentPage={blogPage}
+              totalPages={totalBlogPages}
+              onPageChange={setBlogPage}
+            />
           </div>
         </section>
       )}

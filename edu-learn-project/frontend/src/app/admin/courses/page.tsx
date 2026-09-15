@@ -5,6 +5,7 @@ import { api } from '@/lib/utils/api';
 import { Category, Course, CourseContent, Lesson, Combo } from '@/types';
 import { formatPrice } from '@/lib/utils/helpers';
 import Badge from '@/components/ui/Badge';
+import Pagination from '@/components/ui/Pagination';
 import toast from 'react-hot-toast';
 
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
@@ -446,17 +447,11 @@ export default function AdminCourses() {
               )}
             </tbody>
           </table>
-          {totalPages > 1 && (
-            <div className="flex justify-between items-center px-6 py-4 bg-gray-950/40 border-t border-gray-800 text-xs">
-              <p className="text-gray-400">
-                Hiển thị trang <span className="font-semibold text-white">{currentPage}</span> trên <span className="font-semibold text-white">{totalPages}</span>
-              </p>
-              <div className="flex items-center gap-1.5">
-                <button type="button" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 rounded-lg border border-gray-800 bg-gray-900 text-gray-300 hover:bg-gray-800 disabled:opacity-40 transition font-bold">Trước</button>
-                <button type="button" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 rounded-lg border border-gray-800 bg-gray-900 text-gray-300 hover:bg-gray-800 disabled:opacity-40 transition font-bold">Sau</button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </section>
       )}
