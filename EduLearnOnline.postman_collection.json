@@ -1,8 +1,9 @@
+
 {
   "info": {
     "_postman_id": "17179d09-915f-41f6-b30e-16c704b9a147",
     "name": "EduLearnOnline API Testing Collection v3",
-    "description": "Bộ kiểm thử API dùng chung cho EduLearnOnline, đồng bộ với Backend hiện tại.\nBao phủ ORD-325 → ORD-330 và bổ sung ORD-590 → ORD-597.\nORD-597 đã được cô lập bằng user/token riêng để chạy full collection không xung đột với ORD-329.\nCollection tự tạo dữ liệu test động theo từng lần chạy và chạy tuần tự từ trên xuống.",
+    "description": "Bộ kiểm thử API dùng chung cho EduLearnOnline, Re-tested after bug fixes on 16/09/2026.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "56973388",
     "_collection_link": "https://go.postman.co/collection/56973388-17179d09-915f-41f6-b30e-16c704b9a147?source=collection_link"
