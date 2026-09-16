@@ -5,28 +5,27 @@ on:
     branches:
       - main
       - develop
-      - 'tests/**'
-      - 'test/**'
-      - 'feature/**'
-      - 'auth-flow'
-      - 'auth/**'
-      - '**'
+      - "tests/**"
+      - "test/**"
+      - "feature/**"
+      - "auth-flow"
+      - "auth/**"
+      - "**"
 
   pull_request:
     branches:
       - main
       - develop
-      - 'tests/**'
-      - 'test/**'
-      - 'feature/**'
-      - 'auth-flow'
-      - 'auth/**'
-      - '**'
+      - "tests/**"
+      - "test/**"
+      - "feature/**"
+      - "auth-flow"
+      - "auth/**"
+      - "**"
 
   workflow_dispatch:
 
 jobs:
-
   # ============================================================
   # 1. BUILD & VALIDATE
   # ============================================================
@@ -35,7 +34,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       # ----------------------------------------------------------
       # CHECKOUT
       # ----------------------------------------------------------
@@ -80,7 +78,6 @@ jobs:
         working-directory: ./edu-learn-project/backend
         run: npm run lint
 
-
   # ============================================================
   # 2. AUTOMATION TEST
   # ============================================================
@@ -90,7 +87,6 @@ jobs:
     needs: build
 
     steps:
-
       # ----------------------------------------------------------
       # CHECKOUT
       # ----------------------------------------------------------
@@ -134,7 +130,6 @@ jobs:
           echo "========================================"
           git log -1 --oneline
 
-
       # ==========================================================
       # NODE.JS
       # ==========================================================
@@ -147,7 +142,6 @@ jobs:
             edu-learn-project/frontend/package-lock.json
             edu-learn-project/backend/package-lock.json
             automation-tests/package-lock.json
-
 
       # ==========================================================
       # BACKEND
@@ -188,7 +182,6 @@ jobs:
           cat ./edu-learn-project/backend/backend.log || true
 
           exit 1
-
 
       # ==========================================================
       # FRONTEND
@@ -234,7 +227,6 @@ jobs:
 
           exit 1
 
-
       # ==========================================================
       # CODECEPTJS + PLAYWRIGHT
       # ==========================================================
@@ -246,7 +238,6 @@ jobs:
       - name: Install Playwright Browsers
         working-directory: ./automation-tests
         run: npx playwright install --with-deps chromium
-
 
       # ==========================================================
       # RUN AUTOMATION TEST
@@ -272,7 +263,6 @@ jobs:
           DONT_FAIL_ON_EMPTY_RUN: "true"
           JWT_SECRET: ci_test_secret_for_edulearn_2026_only
 
-
       # ==========================================================
       # UPLOAD AUTOMATION TEST RESULTS
       # ==========================================================
@@ -284,7 +274,6 @@ jobs:
           name: codeceptjs-test-results
           path: ./automation-tests/output
           if-no-files-found: warn
-
 
       # ==========================================================
       # UPLOAD SERVER LOGS
@@ -298,4 +287,16 @@ jobs:
           path: |
             ./edu-learn-project/backend/backend.log
             ./edu-learn-project/frontend/frontend.log
-          if-no-files-found: warn
+          if-no-files-found:
+            warn
+            # ==========================================================
+      # POSTMAN / NEWMAN RE-TEST
+      # ==========================================================
+
+      - name: Re-test Postman API Collection
+        run: |
+          echo "========================================"
+          echo "RE-TEST POSTMAN COLLECTION"
+          echo "========================================"
+
+          npx --yes newman run EduLearnOnline.postman_collection.json
