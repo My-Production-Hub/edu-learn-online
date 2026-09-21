@@ -21,6 +21,8 @@ services:
       - "5000:5000"
     environment:
       - PORT=5000
+      - JWT_SECRET=edulearn-secret-key-2024
+      - FRONTEND_URL=http://localhost:3000
     volumes:
       # Liên kết CSDL SQLite từ máy Host vào Container
       - ./edu-learn-project/backend/database.sqlite:/app/database.sqlite
@@ -37,7 +39,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
     depends_on:
       - backend
     restart: always
@@ -64,6 +66,8 @@ docker compose logs -f backend
 
 Thực hiện sao lưu an toàn CSDL đang chạy thông qua lệnh `VACUUM INTO` mà không gây gián đoạn dịch vụ:
 
+> **Điều kiện tiên quyết:** Cài đặt `sqlite3` trên host (`sudo apt-get install -y sqlite3`) để chạy kiểm tra toàn vẹn bản sao lưu.
+
 ```bash
 # 1. Tạo thư mục chứa backup trên máy host
 mkdir -p ./backups
@@ -82,10 +86,11 @@ const { getDatabase } = require('./db.js');
 "
 
 # 3. Kiểm tra tính toàn vẹn (Integrity Check) của bản backup
-sqlite3 ./backups/$(ls -t ./backups/*.sqlite | head -n 1 | xargs -n 1 basename) "PRAGMA integrity_check;"
+LATEST_BACKUP=$(ls -t ./backups/*.sqlite | head -n 1)
+sqlite3 "$LATEST_BACKUP" "PRAGMA integrity_check;"
 
-# 4. Sao lưu thư mục media / ảnh minh chứng
-tar -czvf ./backups/uploads_$(date +%Y%m%d_%H%M%S).tar.gz ./edu-learn-project/backend/uploads/
+# 4. Sao lưu thư mục media / ảnh minh chứng (đóng gói từ thư mục backend)
+tar -czvf ./backups/uploads_$(date +%Y%m%d_%H%M%S).tar.gz -C ./edu-learn-project/backend uploads
 ```
 
 ---
@@ -107,7 +112,7 @@ cp ./backups/backup_CHOOSE_DATE.sqlite ./edu-learn-project/backend/database.sqli
 # 4. Kiểm tra lại tính toàn vẹn file CSDL
 sqlite3 ./edu-learn-project/backend/database.sqlite "PRAGMA integrity_check;"
 
-# 5. Phục hồi thư mục uploads (nếu cần)
+# 5. Phục hồi thư mục uploads vào đúng vị trí backend/uploads
 tar -xzvf ./backups/uploads_CHOOSE_DATE.tar.gz -C ./edu-learn-project/backend/
 
 # 6. Khởi động lại dịch vụ backend
@@ -124,9 +129,10 @@ docker compose logs -f backend
 
 ```bash
 # 1. Sao lưu toàn bộ dữ liệu trước khi rollback
-mkdir -p ./backups/pre-rollback-$(date +%Y%m%d_%H%M%S)
-cp ./edu-learn-project/backend/database.sqlite ./backups/pre-rollback-$(date +%Y%m%d_%H%M%S)/
-cp -r ./edu-learn-project/backend/uploads ./backups/pre-rollback-$(date +%Y%m%d_%H%M%S)/
+TS=$(date +%Y%m%d_%H%M%S)
+mkdir -p ./backups/pre-rollback-$TS
+cp ./edu-learn-project/backend/database.sqlite ./backups/pre-rollback-$TS/
+cp -r ./edu-learn-project/backend/uploads ./backups/pre-rollback-$TS/
 
 # 2. Chuyển mã nguồn về commit / tag ổn định
 git checkout <STABLE_TAG_OR_COMMIT>

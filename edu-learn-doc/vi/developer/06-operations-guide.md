@@ -29,12 +29,12 @@ Hệ thống EduLearn được đóng gói và vận hành dưới dạng các d
    cd edu-learn-online
    ```
 
-2. **Cấu hình biến môi trường (`.env`)**:
+3. **Cấu hình biến môi trường (`.env`)**:
    Tạo file `.env` tại thư mục gốc hoặc trong từng module:
    ```env
    # Backend Config (.env)
    PORT=5000
-   JWT_SECRET=your_super_secure_jwt_secret_key_2026
+   JWT_SECRET=edulearn-secret-key-2024
    FRONTEND_URL=http://localhost:3000
    NODE_ENV=production
 
@@ -93,12 +93,15 @@ const { getDatabase } = require('./db.js');
 "
 
 # 2. Kiểm tra tính toàn vẹn (Integrity Check) của bản backup vừa tạo
-sqlite3 ./backups/$(ls -t ./backups/*.sqlite | head -n 1 | xargs -n 1 basename) "PRAGMA integrity_check;"
+# (Yêu cầu cài đặt sqlite3 trên host: sudo apt-get install -y sqlite3)
+LATEST_BACKUP=$(ls -t ./backups/*.sqlite | head -n 1)
+sqlite3 "$LATEST_BACKUP" "PRAGMA integrity_check;"
 ```
 
 ### 3.2 Sao lưu thư mục tệp tin tải lên (`uploads/`)
 ```bash
-tar -czvf ./backups/uploads_$(date +%Y%m%d_%H%M%S).tar.gz ./edu-learn-project/backend/uploads/
+# Đóng gói thư mục uploads từ thư mục backend để tránh lồng cấp thư mục khi giải nén
+tar -czvf ./backups/uploads_$(date +%Y%m%d_%H%M%S).tar.gz -C ./edu-learn-project/backend uploads
 ```
 
 ### 3.3 Thiết lập sao lưu tự động hàng ngày (Cron Job)
@@ -163,8 +166,10 @@ Khi xảy ra sự cố hỏng dữ liệu hoặc thao tác nhầm, thực hiện
 
 ### Bước 1: Sao lưu Snapshot dữ liệu trước khi Rollback
 ```bash
-mkdir -p ./backups/pre-rollback-$(date +%Y%m%d_%H%M%S)
-cp ./edu-learn-project/backend/database.sqlite ./backups/pre-rollback-$(date +%Y%m%d_%H%M%S)/
+TS=$(date +%Y%m%d_%H%M%S)
+mkdir -p ./backups/pre-rollback-$TS
+cp ./edu-learn-project/backend/database.sqlite ./backups/pre-rollback-$TS/
+cp -r ./edu-learn-project/backend/uploads ./backups/pre-rollback-$TS/
 ```
 
 ### Bước 2: Rollback Docker Containers / Git Commit

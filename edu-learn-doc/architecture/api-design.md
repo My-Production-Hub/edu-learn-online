@@ -28,13 +28,14 @@
 ### 2.1 Authentication & User Profile
 | Method | Endpoint | Description | Perm |
 |--------|----------|-------------|------|
-| POST | `/api/register` | Đăng ký tài khoản người dùng mới | Public |
-| POST | `/api/login` | Đăng nhập tài khoản & Nhận JWT token | Public |
+| POST | `/api/auth/register` | Đăng ký tài khoản người dùng mới | Public |
+| POST | `/api/auth/login` | Đăng nhập tài khoản & Nhận JWT token | Public |
 | POST | `/api/forgot-password` | Gửi email yêu cầu đặt lại mật khẩu | Public |
 | POST | `/api/reset-password` | Đặt lại mật khẩu với reset token | Public |
+| GET | `/api/reset-password/verify` | Kiểm tra tính hợp lệ của reset token | Public |
 | GET | `/api/users/profile` | Lấy thông tin cá nhân của người dùng hiện tại | User / CTV / Admin |
 | PUT | `/api/users/profile` | Cập nhật thông tin họ tên, số điện thoại | User / CTV / Admin |
-| PUT | `/api/users/change-password` | Đổi mật khẩu tài khoản | User / CTV / Admin |
+| PUT | `/api/auth/change-password` | Đổi mật khẩu tài khoản | User / CTV / Admin |
 
 ---
 
@@ -55,11 +56,11 @@
 
 ---
 
-### 2.3 Coupons & Giảm giá (`/api/orders/validate-coupon`, `/api/admin/coupons`)
+### 2.3 Coupons & Giảm giá (`/api/coupons/validate`, `/api/admin/coupons`)
 | Method | Endpoint | Description | Perm |
 |--------|----------|-------------|------|
-| POST | `/api/orders/validate-coupon` | Kiểm tra tính hợp lệ & tính giảm giá coupon | Public / User |
-| GET | `/api/coupons/active` | Lấy danh sách mã giảm giá đang hoạt động | Public / User |
+| POST | `/api/coupons/validate` | Kiểm tra tính hợp lệ & tính giảm giá coupon | Public / User |
+| GET | `/api/coupons` | Lấy danh sách mã giảm giá đang hoạt động | Public / User |
 | GET | `/api/admin/coupons` | Quản lý danh sách mã giảm giá toàn hệ thống | Admin / Staff |
 | POST | `/api/admin/coupons` | Tạo mới mã giảm giá (Theo % hoặc Tiền mặt) | Admin / Staff |
 | PUT | `/api/admin/coupons/:id` | Sửa cấu hình mã giảm giá | Admin / Staff |
@@ -76,15 +77,15 @@
 | POST | `/api/orders/upload-proof` | Tải lên ảnh biên lai chuyển khoản ngân hàng | User |
 | GET | `/api/admin/orders` | Quản lý toàn bộ đơn hàng hệ thống | Admin / Staff |
 | PUT | `/api/admin/orders/:id/status` | Cập nhật trạng thái xử lý đơn hàng | Admin / Staff |
-| PUT | `/api/admin/orders/:id/payment-status` | Xác nhận duyệt thanh toán đơn hàng | Admin / Staff |
+| PATCH | `/api/admin/orders/:id/payment-status` | Xác nhận duyệt thanh toán đơn hàng | Admin / Staff |
 
 ---
 
 ### 2.5 Affiliate & Withdrawals (`/api/affiliate`, `/api/admin/withdrawals`)
 | Method | Endpoint | Description | Perm |
 |--------|----------|-------------|------|
-| POST | `/api/affiliate/register` | Gửi đơn đăng ký làm Cộng tác viên (CTV) | User |
-| GET | `/api/affiliate/status` | Kiểm tra trạng thái duyệt đơn CTV | User / CTV |
+| POST | `/api/affiliates/register` | Gửi đơn đăng ký làm Cộng tác viên (CTV) | User |
+| GET | `/api/affiliates/status` | Kiểm tra trạng thái duyệt đơn CTV | User / CTV |
 | GET | `/api/affiliate/report` | Báo cáo lượt click, đơn hàng, hoa hồng CTV | CTV |
 | POST | `/api/affiliate/withdrawals` | Tạo yêu cầu rút tiền hoa hồng (Tối thiểu 50.000đ) | CTV |
 | GET | `/api/affiliate/withdrawals` | Lịch sử yêu cầu rút tiền của cá nhân CTV | CTV |
@@ -92,7 +93,7 @@
 | PUT | `/api/admin/affiliates/:id/status` | Duyệt / Khóa quyền CTV | Admin / Staff |
 | GET | `/api/admin/withdrawals` | Danh sách yêu cầu rút tiền của các CTV | Admin / Staff |
 | PUT | `/api/admin/withdrawals/:id/status` | Duyệt chi trả (`completed`) / Từ chối (`rejected`) | Admin / Staff |
-| GET | `/api/admin/affiliate/stats` | Thống kê doanh thu chi tiết theo từng CTV | Admin / Staff |
+| GET | `/api/admin/affiliate-commission-stats` | Thống kê doanh thu chi tiết theo từng CTV | Admin / Staff |
 
 ---
 

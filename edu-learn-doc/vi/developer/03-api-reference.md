@@ -19,7 +19,7 @@ Tài liệu chi tiết các Endpoints của nền tảng **EduLearn Online**, đ
 
 ### Đăng ký tài khoản
 ```http
-POST /api/register
+POST /api/auth/register
 Content-Type: application/json
 ```
 **Request Body:**
@@ -34,7 +34,7 @@ Content-Type: application/json
 
 ### Đăng nhập hệ thống
 ```http
-POST /api/login
+POST /api/auth/login
 Content-Type: application/json
 ```
 **Response 200:**
@@ -57,7 +57,7 @@ Content-Type: application/json
 ### Thông tin cá nhân & Đổi mật khẩu
 * **Lấy profile:** `GET /api/users/profile` (Auth: Bearer)
 * **Cập nhật profile:** `PUT /api/users/profile` (Auth: Bearer, Body: `{ "full_name": "...", "phone": "..." }`)
-* **Đổi mật khẩu:** `PUT /api/users/change-password` (Auth: Bearer, Body: `{ "old_password": "...", "new_password": "..." }`)
+* **Đổi mật khẩu:** `PUT /api/auth/change-password` (Auth: Bearer, Body: `{ "old_password": "...", "new_password": "..." }`)
 
 ---
 
@@ -91,7 +91,7 @@ GET /api/courses/:id
 
 ### Kiểm tra & tính toán mã giảm giá
 ```http
-POST /api/orders/validate-coupon
+POST /api/coupons/validate
 Content-Type: application/json
 ```
 **Request Body:**
@@ -141,14 +141,14 @@ Content-Type: multipart/form-data
 ### Quản lý đơn hàng (Admin)
 * **Lấy toàn bộ đơn hàng:** `GET /api/admin/orders`
 * **Cập nhật trạng thái đơn:** `PUT /api/admin/orders/:id/status` (Body: `{ "status": "completed" }`)
-* **Duyệt thanh toán:** `PUT /api/admin/orders/:id/payment-status` (Body: `{ "payment_status": "da_thanh_toan" }`)
+* **Duyệt thanh toán:** `PATCH /api/admin/orders/:id/payment-status` (Body: `{ "payment_status": "da_thanh_toan" }`)
 
 ---
 
 ## 6. Tiếp thị liên kết (Affiliate) & Rút tiền
 
 ### Đăng ký CTV & Báo cáo hiệu suất
-* **Đăng ký CTV:** `POST /api/affiliate/register`
+* **Đăng ký CTV:** `POST /api/affiliates/register`
 * **Báo cáo doanh thu CTV:** `GET /api/affiliate/report` (Auth: Bearer CTV)
 
 ### Yêu cầu rút tiền hoa hồng

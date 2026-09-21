@@ -22,6 +22,13 @@ const allowedOrigins = [
   'https://admin.edulearnonline.com'
 ];
 
+if (process.env.FRONTEND_URL) {
+  process.env.FRONTEND_URL.split(',').forEach(u => {
+    const trimmed = u.trim();
+    if (trimmed && !allowedOrigins.includes(trimmed)) allowedOrigins.push(trimmed);
+  });
+}
+
 function isOriginAllowed(origin) {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
