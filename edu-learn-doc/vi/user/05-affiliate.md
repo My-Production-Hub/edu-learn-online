@@ -19,7 +19,7 @@ Chương trình Affiliate cho phép bạn tạo thu nhập thụ động bằng 
 
 ### Các bước tham gia:
 1. Đăng nhập vào hệ thống EduLearn.
-2. Điều hướng đến mục **Tài khoản cá nhân → Tab Tiếp thị liên kết** (đường dẫn: `/tai-khoan/affiliate`).
+2. Điều hướng đến mục **Tài khoản cá nhân → Tab Tiếp thị liên kết** (đường dẫn: `/tai-khoan?tab=affiliate`).
 3. Nhấn nút **Đăng ký tham gia CTV**.
 4. Điền các thông tin liên hệ và gửi đơn đăng ký.
 

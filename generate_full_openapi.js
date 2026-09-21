@@ -1,0 +1,1228 @@
+const fs = require('fs');
+const path = require('path');
+
+// Read existing openapi.json to preserve any rich schema components
+const existingSpecPath = path.join(__dirname, 'edu-learn-project', 'backend', 'openapi.json');
+let existingSpec = {};
+if (fs.existsSync(existingSpecPath)) {
+  existingSpec = JSON.parse(fs.readFileSync(existingSpecPath, 'utf8'));
+}
+
+const fullOpenapi = {
+  openapi: "3.0.3",
+  info: {
+    title: "EduLearn Online REST API",
+    version: "1.0.0",
+    description: "Tài liệu API chính thức và đặc tả OpenAPI 3.0 đầy đủ cho nền tảng học trực tuyến EduLearn Online (Bao phủ toàn bộ 111 endpoints hệ thống).",
+    contact: {
+      name: "EduLearn Dev & QA Team",
+      email: "ptthong.www@gmail.com"
+    }
+  },
+  servers: [
+    {
+      url: "http://localhost:5000",
+      description: "Local Development Server"
+    }
+  ],
+  tags: [
+    { name: "System & Health", description: "Hệ thống, kiểm tra trạng thái và tài liệu" },
+    { name: "Authentication", description: "Đăng ký, đăng nhập, quên và đặt lại mật khẩu" },
+    { name: "Users & Profile", description: "Thông tin cá nhân, hồ sơ và tài khoản người dùng" },
+    { name: "Categories", description: "Quản lý danh mục khóa học" },
+    { name: "Courses", description: "Khóa học trực tuyến (Học viên & Quản trị viên)" },
+    { name: "Combos", description: "Gói Combo khóa học ưu đãi" },
+    { name: "Coupons", description: "Mã giảm giá, khuyến mãi và thẩm định voucher" },
+    { name: "Orders & Payments", description: "Tạo đơn hàng, tra cứu và tải biên lai thanh toán" },
+    { name: "Affiliate - User", description: "Cộng tác viên: Đăng ký, báo cáo, click, link giới thiệu" },
+    { name: "Affiliate - Withdrawals", description: "Yêu cầu rút tiền hoa hồng và quản lý chi trả" },
+    { name: "Affiliate - Guides & Terms", description: "Tài liệu hướng dẫn và điều khoản tiếp thị liên kết" },
+    { name: "Blogs & News", description: "Bài viết, tin tức và danh mục blog" },
+    { name: "Content & Settings", description: "Cấu hình trang chủ, banner, FAQ, điều khoản và thông tin liên hệ" },
+    { name: "Email Service", description: "Cấu hình máy chủ SMTP và trạng thái gửi thư" },
+    { name: "Payment Methods", description: "Quản lý các phương thức thanh toán" },
+    { name: "Admin - Management", description: "Quản trị tài khoản người dùng, phân quyền và duyệt nội dung" },
+    { name: "Admin - Statistics", description: "Báo cáo doanh thu, tăng trưởng và phân tích hệ thống" },
+    { name: "Media & Uploads", description: "Tải lên hình ảnh và tệp đính kèm" }
+  ],
+  paths: {},
+  components: {
+    securitySchemes: {
+      BearerAuth: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description: "Nhập JWT token theo định dạng: Bearer <token>"
+      }
+    },
+    schemas: {
+      StandardResponse: {
+        type: "object",
+        properties: {
+          message: { type: "string" },
+          status: { type: "string" }
+        }
+      },
+      ErrorResponse: {
+        type: "object",
+        properties: {
+          message: { type: "string" },
+          error: { type: "string" }
+        }
+      },
+      User: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          email: { type: "string", format: "email" },
+          full_name: { type: "string" },
+          phone: { type: "string" },
+          role: { type: "string", enum: ["USER", "CTV", "STAFF", "MANAGER", "ADMIN"] },
+          status: { type: "string", enum: ["active", "locked"] }
+        }
+      },
+      Course: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          title: { type: "string" },
+          slug: { type: "string" },
+          description: { type: "string" },
+          price: { type: "number", minimum: 0 },
+          original_price: { type: "number", minimum: 0 },
+          category_id: { type: "string" },
+          image: { type: "string" },
+          status: { type: "string", enum: ["published", "draft", "archived"] }
+        }
+      },
+      Order: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          user_id: { type: "string" },
+          total: { type: "number" },
+          subtotal: { type: "number" },
+          discount_amount: { type: "number" },
+          coupon_code: { type: "string", nullable: true },
+          payment_method: { type: "string" },
+          status: { type: "string", enum: ["pending", "completed", "cancelled"] },
+          payment_status: { type: "string", enum: ["chua_thanh_toan", "da_thanh_toan", "that_bai"] },
+          payment_proof: { type: "string", nullable: true },
+          created_at: { type: "string", format: "date-time" }
+        }
+      },
+      Coupon: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          code: { type: "string" },
+          discount: { type: "number" },
+          discount_type: { type: "string", enum: ["percent", "fixed"] },
+          quantity: { type: "integer" },
+          used_count: { type: "integer" },
+          expired_date: { type: "string", format: "date" },
+          min_order_amount: { type: "number" },
+          max_discount: { type: "number" },
+          status: { type: "string", enum: ["active", "inactive"] }
+        }
+      },
+      Withdrawal: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          user_id: { type: "string" },
+          amount: { type: "number", minimum: 50000 },
+          bank_name: { type: "string" },
+          bank_account: { type: "string" },
+          account_holder: { type: "string" },
+          status: { type: "string", enum: ["pending", "completed", "rejected"] },
+          created_at: { type: "string", format: "date-time" }
+        }
+      }
+    }
+  }
+};
+
+// Helper to add an endpoint operation
+function addOp(pathKey, method, details) {
+  if (!fullOpenapi.paths[pathKey]) {
+    fullOpenapi.paths[pathKey] = {};
+  }
+  fullOpenapi.paths[pathKey][method] = details;
+}
+
+// 1. System & Health
+addOp("/api/docs/openapi.json", "get", {
+  tags: ["System & Health"],
+  summary: "Lấy tài liệu OpenAPI Specification định dạng JSON",
+  responses: { 200: { description: "Trả về nội dung OpenAPI JSON spec" } }
+});
+addOp("/", "get", {
+  tags: ["System & Health"],
+  summary: "Root Endpoint - Kiểm tra trạng thái máy chủ",
+  responses: { 200: { description: "Server running OK" } }
+});
+addOp("/api/health", "get", {
+  tags: ["System & Health"],
+  summary: "Kiểm tra sức khỏe dịch vụ Backend và kết nối CSDL",
+  responses: { 200: { description: "Service Health Status" } }
+});
+
+// 2. Authentication
+addOp("/api/auth/register", "post", {
+  tags: ["Authentication"],
+  summary: "Đăng ký tài khoản người dùng mới",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["email", "password", "full_name", "phone"],
+          properties: {
+            email: { type: "string", format: "email" },
+            password: { type: "string", minLength: 6 },
+            full_name: { type: "string" },
+            phone: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: {
+    201: { description: "Đăng ký tài khoản thành công" },
+    400: { description: "Dữ liệu đăng ký không hợp lệ" },
+    409: { description: "Email hoặc số điện thoại đã tồn tại" }
+  }
+});
+addOp("/api/auth/login", "post", {
+  tags: ["Authentication"],
+  summary: "Đăng nhập hệ thống & Nhận JWT Token",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["email", "password"],
+          properties: {
+            email: { type: "string", format: "email" },
+            password: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: {
+    200: { description: "Đăng nhập thành công, trả về JWT Token và thông tin User" },
+    400: { description: "Thiếu email hoặc mật khẩu" },
+    401: { description: "Sai email hoặc mật khẩu" },
+    403: { description: "Tài khoản đang bị khóa" }
+  }
+});
+addOp("/api/auth/change-password", "put", {
+  tags: ["Authentication"],
+  summary: "Đổi mật khẩu người dùng hiện tại",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["old_password", "new_password"],
+          properties: {
+            old_password: { type: "string" },
+            new_password: { type: "string", minLength: 6 }
+          }
+        }
+      }
+    }
+  },
+  responses: {
+    200: { description: "Đổi mật khẩu thành công" },
+    400: { description: "Mật khẩu cũ không chính xác hoặc mật khẩu mới không hợp lệ" },
+    401: { description: "Chưa xác thực" }
+  }
+});
+addOp("/api/forgot-password", "post", {
+  tags: ["Authentication"],
+  summary: "Yêu cầu mã đặt lại mật khẩu qua email",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["email"],
+          properties: { email: { type: "string", format: "email" } }
+        }
+      }
+    }
+  },
+  responses: {
+    200: { description: "Đã gửi hướng dẫn đặt lại mật khẩu về email" },
+    404: { description: "Email chưa được đăng ký trong hệ thống" }
+  }
+});
+addOp("/api/reset-password", "post", {
+  tags: ["Authentication"],
+  summary: "Đặt lại mật khẩu mới bằng Token khôi phục",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["token", "new_password"],
+          properties: {
+            token: { type: "string" },
+            new_password: { type: "string", minLength: 6 }
+          }
+        }
+      }
+    }
+  },
+  responses: {
+    200: { description: "Đặt lại mật khẩu thành công" },
+    400: { description: "Token không hợp lệ hoặc đã hết hạn" }
+  }
+});
+addOp("/api/reset-password/verify", "get", {
+  tags: ["Authentication"],
+  summary: "Xác thực tính hợp lệ của Token đặt lại mật khẩu",
+  parameters: [
+    { name: "token", in: "query", required: true, schema: { type: "string" } }
+  ],
+  responses: {
+    200: { description: "Token hợp lệ" },
+    400: { description: "Token không hợp lệ hoặc hết hạn" }
+  }
+});
+
+// 3. Users & Profile
+addOp("/api/users/profile", "get", {
+  tags: ["Users & Profile"],
+  summary: "Lấy thông tin cá nhân của người dùng đăng nhập",
+  security: [{ BearerAuth: [] }],
+  responses: {
+    200: { description: "Thông tin hồ sơ người dùng", content: { "application/json": { schema: { $ref: "#/components/schemas/User" } } } },
+    401: { description: "Chưa xác thực" }
+  }
+});
+addOp("/api/users/profile", "put", {
+  tags: ["Users & Profile"],
+  summary: "Cập nhật thông tin cá nhân (họ tên, số điện thoại, avatar)",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: {
+            full_name: { type: "string" },
+            phone: { type: "string" },
+            avatar: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: {
+    200: { description: "Cập nhật thông tin thành công" },
+    400: { description: "Dữ liệu cập nhật không hợp lệ" }
+  }
+});
+
+// 4. Categories
+addOp("/api/categories", "get", {
+  tags: ["Categories"],
+  summary: "Lấy danh sách tất cả danh mục khóa học",
+  responses: { 200: { description: "Danh sách danh mục" } }
+});
+addOp("/api/admin/categories", "post", {
+  tags: ["Categories"],
+  summary: "Tạo danh mục khóa học mới",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["name", "slug"],
+          properties: {
+            name: { type: "string" },
+            slug: { type: "string" },
+            description: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: { 201: { description: "Tạo danh mục thành công" }, 403: { description: "Yêu cầu quyền Quản trị" } }
+});
+addOp("/api/admin/categories/{id}", "put", {
+  tags: ["Categories"],
+  summary: "Cập nhật danh mục khóa học",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/admin/categories/{id}", "delete", {
+  tags: ["Categories"],
+  summary: "Xóa danh mục khóa học",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Xóa thành công" } }
+});
+
+// 5. Courses
+addOp("/api/courses", "get", {
+  tags: ["Courses"],
+  summary: "Lấy danh sách khóa học công khai (kèm lọc, tìm kiếm, phân trang)",
+  parameters: [
+    { name: "category", in: "query", schema: { type: "string" }, description: "Lọc theo danh mục" },
+    { name: "search", in: "query", schema: { type: "string" }, description: "Từ khóa tìm kiếm" },
+    { name: "priceRange", in: "query", schema: { type: "string", enum: ["all", "under500k", "under1m", "over1m"] } },
+    { name: "page", in: "query", schema: { type: "integer", default: 1 } },
+    { name: "limit", in: "query", schema: { type: "integer", default: 12 } }
+  ],
+  responses: { 200: { description: "Danh sách khóa học và thông tin phân trang" } }
+});
+addOp("/api/courses/{id}", "get", {
+  tags: ["Courses"],
+  summary: "Lấy thông tin chi tiết một khóa học theo ID hoặc Slug",
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: {
+    200: { description: "Thông tin chi tiết khóa học" },
+    404: { description: "Khóa học không tồn tại" }
+  }
+});
+addOp("/api/my-courses", "get", {
+  tags: ["Courses"],
+  summary: "Lấy danh sách các khóa học đã mua của học viên",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách khóa học của học viên" } }
+});
+addOp("/api/admin/courses", "get", {
+  tags: ["Courses"],
+  summary: "Lấy toàn bộ danh sách khóa học phục vụ quản trị",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách quản trị khóa học" } }
+});
+addOp("/api/admin/courses", "post", {
+  tags: ["Courses"],
+  summary: "Tạo khóa học mới (Admin/Manager)",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: { "application/json": { schema: { $ref: "#/components/schemas/Course" } } }
+  },
+  responses: { 201: { description: "Tạo khóa học thành công" } }
+});
+addOp("/api/admin/courses/{id}", "put", {
+  tags: ["Courses"],
+  summary: "Cập nhật thông tin khóa học",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật khóa học thành công" } }
+});
+addOp("/api/admin/courses/{id}", "delete", {
+  tags: ["Courses"],
+  summary: "Xóa khóa học",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Xóa khóa học thành công" } }
+});
+
+// 6. Combos
+addOp("/api/combos", "get", {
+  tags: ["Combos"],
+  summary: "Lấy danh sách các gói Combo khóa học đang phát hành",
+  responses: { 200: { description: "Danh sách Combo" } }
+});
+addOp("/api/combos/{id}", "get", {
+  tags: ["Combos"],
+  summary: "Lấy thông tin chi tiết một gói Combo",
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Chi tiết Combo" }, 404: { description: "Không tìm thấy Combo" } }
+});
+addOp("/api/admin/combos", "post", {
+  tags: ["Combos"],
+  summary: "Tạo gói Combo khóa học mới",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 201: { description: "Tạo combo thành công" } }
+});
+addOp("/api/admin/combos/{id}", "put", {
+  tags: ["Combos"],
+  summary: "Cập nhật gói Combo khóa học",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/admin/combos/{id}", "delete", {
+  tags: ["Combos"],
+  summary: "Xóa gói Combo khóa học",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Xóa thành công" } }
+});
+
+// 7. Coupons
+addOp("/api/coupons", "get", {
+  tags: ["Coupons"],
+  summary: "Lấy danh sách mã giảm giá công khai đang khả dụng",
+  responses: { 200: { description: "Danh sách coupon đang active" } }
+});
+addOp("/api/coupons/validate", "post", {
+  tags: ["Coupons"],
+  summary: "Kiểm tra tính hợp lệ & tính số tiền giảm giá của mã Coupon",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["code", "subtotal"],
+          properties: {
+            code: { type: "string" },
+            subtotal: { type: "number", minimum: 0 }
+          }
+        }
+      }
+    }
+  },
+  responses: {
+    200: { description: "Mã giảm giá hợp lệ và số tiền được giảm" },
+    400: { description: "Mã giảm giá hết hạn, không đủ điều kiện hoặc hết lượt dùng" },
+    404: { description: "Mã giảm giá không tồn tại" }
+  }
+});
+addOp("/api/admin/coupons", "get", {
+  tags: ["Coupons"],
+  summary: "Lấy danh sách toàn bộ Coupon hệ thống (Admin)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách Coupon quản trị" } }
+});
+addOp("/api/admin/coupons", "post", {
+  tags: ["Coupons"],
+  summary: "Tạo mã Coupon mới",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/Coupon" } } } },
+  responses: { 201: { description: "Tạo coupon thành công" } }
+});
+addOp("/api/admin/coupons/{id}", "put", {
+  tags: ["Coupons"],
+  summary: "Cập nhật thông tin mã Coupon",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật coupon thành công" } }
+});
+addOp("/api/admin/coupons/{id}", "delete", {
+  tags: ["Coupons"],
+  summary: "Xóa mã Coupon",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Xóa coupon thành công" } }
+});
+
+// 8. Orders & Payments
+addOp("/api/orders", "post", {
+  tags: ["Orders & Payments"],
+  summary: "Tạo đơn hàng mới (Mua khóa học/combo, áp dụng coupon & ghi nhận affiliate)",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["items", "payment_method"],
+          properties: {
+            items: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  course_id: { type: "string" },
+                  combo_id: { type: "string" },
+                  price: { type: "number" },
+                  title: { type: "string" }
+                }
+              }
+            },
+            payment_method: { type: "string", enum: ["qr_banking", "momo", "vnpay", "banking"] },
+            coupon_code: { type: "string" },
+            ref: { type: "string", description: "Mã giới thiệu Affiliate" },
+            payment_qr_content: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: {
+    201: { description: "Tạo đơn hàng thành công" },
+    400: { description: "Dữ liệu đơn hàng hoặc giỏ hàng không hợp lệ" }
+  }
+});
+addOp("/api/orders", "get", {
+  tags: ["Orders & Payments"],
+  summary: "Lấy danh sách đơn hàng của người dùng hiện tại",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách đơn hàng của User" } }
+});
+addOp("/api/orders/{id}", "get", {
+  tags: ["Orders & Payments"],
+  summary: "Xem chi tiết một đơn hàng theo ID",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Chi tiết đơn hàng" }, 404: { description: "Không tìm thấy đơn hàng" } }
+});
+addOp("/api/orders/upload-proof", "post", {
+  tags: ["Orders & Payments"],
+  summary: "Tải lên hình ảnh biên lai thanh toán chuyển khoản ngân hàng",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["orderId", "proof"],
+          properties: {
+            orderId: { type: "string" },
+            proof: { type: "string", description: "Base64 data URL hoặc URL ảnh" }
+          }
+        }
+      }
+    }
+  },
+  responses: { 200: { description: "Tải biên lai thanh toán thành công" } }
+});
+addOp("/api/admin/orders", "get", {
+  tags: ["Orders & Payments"],
+  summary: "Lấy toàn bộ đơn hàng trong hệ thống (Admin/Staff)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách đơn hàng toàn hệ thống" } }
+});
+addOp("/api/admin/orders/{id}/status", "put", {
+  tags: ["Orders & Payments"],
+  summary: "Cập nhật trạng thái xử lý đơn hàng (pending, completed, cancelled)",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: {
+    required: true,
+    content: { "application/json": { schema: { type: "object", properties: { status: { type: "string" } } } } }
+  },
+  responses: { 200: { description: "Cập nhật trạng thái đơn hàng thành công" } }
+});
+addOp("/api/admin/orders/{id}/payment-status", "patch", {
+  tags: ["Orders & Payments"],
+  summary: "Cập nhật trạng thái thanh toán đơn hàng (da_thanh_toan, chua_thanh_toan)",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: {
+    required: true,
+    content: { "application/json": { schema: { type: "object", properties: { payment_status: { type: "string" } } } } }
+  },
+  responses: { 200: { description: "Duyệt thanh toán thành công" } }
+});
+
+// 9. Affiliate - User
+addOp("/api/affiliates/register", "post", {
+  tags: ["Affiliate - User"],
+  summary: "Gửi đơn đăng ký tham gia chương trình Tiếp thị liên kết (CTV)",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["bank_name", "bank_account", "account_holder"],
+          properties: {
+            bank_name: { type: "string" },
+            bank_account: { type: "string" },
+            account_holder: { type: "string" },
+            phone: { type: "string" },
+            note: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: { 201: { description: "Gửi đơn đăng ký CTV thành công" } }
+});
+addOp("/api/affiliates/status", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Kiểm tra trạng thái tài khoản CTV (pending, approved, rejected, terminated)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Thông tin trạng thái CTV" } }
+});
+addOp("/api/affiliate/clicks", "post", {
+  tags: ["Affiliate - User"],
+  summary: "Ghi nhận lượt click qua đường link giới thiệu của CTV",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["affiliate_code"],
+          properties: {
+            affiliate_code: { type: "string" },
+            url: { type: "string" },
+            ip: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: { 200: { description: "Ghi nhận click thành công" } }
+});
+addOp("/api/affiliate/validate", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Xác thực mã giới thiệu CTV hợp lệ",
+  parameters: [{ name: "code", in: "query", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Mã CTV hợp lệ" }, 404: { description: "Mã CTV không tồn tại" } }
+});
+addOp("/api/affiliate/report", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Báo cáo thống kê hiệu suất kinh doanh (click, đơn hàng, hoa hồng)",
+  security: [{ BearerAuth: [] }],
+  parameters: [
+    { name: "start", in: "query", schema: { type: "string", format: "date" } },
+    { name: "end", in: "query", schema: { type: "string", format: "date" } }
+  ],
+  responses: { 200: { description: "Báo cáo chi tiết hiệu suất CTV" } }
+});
+addOp("/api/affiliate/courses", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Lấy danh sách khóa học và mức hoa hồng áp dụng cho CTV",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách sản phẩm tiếp thị" } }
+});
+addOp("/api/affiliate/notifications", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Lấy thông báo dành cho Cộng tác viên",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách thông báo CTV" } }
+});
+addOp("/api/affiliate/notification-count", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Đếm số lượng thông báo chưa đọc của CTV",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Số lượng thông báo chưa đọc" } }
+});
+
+// 10. Affiliate - Withdrawals & Admin
+addOp("/api/affiliate/withdrawals", "post", {
+  tags: ["Affiliate - Withdrawals"],
+  summary: "Tạo yêu cầu rút tiền hoa hồng về tài khoản ngân hàng (Tối thiểu 50.000đ)",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["amount", "bank_name", "bank_account", "account_holder"],
+          properties: {
+            amount: { type: "number", minimum: 50000 },
+            bank_name: { type: "string" },
+            bank_account: { type: "string" },
+            account_holder: { type: "string" },
+            phone: { type: "string" },
+            email: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: {
+    201: { description: "Tạo yêu cầu rút tiền thành công" },
+    400: { description: "Số tiền rút dưới 50.000đ hoặc vượt quá số dư khả dụng" }
+  }
+});
+addOp("/api/affiliate/withdrawals", "get", {
+  tags: ["Affiliate - Withdrawals"],
+  summary: "Lấy lịch sử các yêu cầu rút tiền của cá nhân CTV",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách yêu cầu rút tiền" } }
+});
+addOp("/api/admin/withdrawals", "get", {
+  tags: ["Affiliate - Withdrawals"],
+  summary: "Lấy toàn bộ danh sách yêu cầu rút tiền của các CTV trong hệ thống",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách yêu cầu rút tiền toàn hệ thống" } }
+});
+addOp("/api/admin/withdrawals/{id}/status", "put", {
+  tags: ["Affiliate - Withdrawals"],
+  summary: "Duyệt chi trả (completed) hoặc từ chối (rejected) yêu cầu rút tiền",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["status"],
+          properties: {
+            status: { type: "string", enum: ["completed", "rejected"] },
+            note: { type: "string" }
+          }
+        }
+      }
+    }
+  },
+  responses: { 200: { description: "Cập nhật trạng thái rút tiền thành công" } }
+});
+addOp("/api/admin/affiliates", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Quản lý danh sách toàn bộ Cộng tác viên trong hệ thống (Admin)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách CTV" } }
+});
+addOp("/api/admin/affiliates/{id}/status", "put", {
+  tags: ["Affiliate - User"],
+  summary: "Duyệt/Khóa/Chấm dứt quyền hoạt động CTV (approved, rejected, terminated)",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          required: ["status"],
+          properties: {
+            status: { type: "string", enum: ["pending", "approved", "rejected", "terminated"] }
+          }
+        }
+      }
+    }
+  },
+  responses: { 200: { description: "Cập nhật trạng thái CTV thành công" } }
+});
+addOp("/api/admin/affiliate-revenues", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Lấy danh sách hoa hồng phát sinh từ các đơn hàng CTV",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách doanh thu hoa hồng" } }
+});
+addOp("/api/admin/affiliate-revenues/{id}/status", "put", {
+  tags: ["Affiliate - User"],
+  summary: "Cập nhật trạng thái giao dịch hoa hồng",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật trạng thái hoa hồng thành công" } }
+});
+addOp("/api/admin/affiliate-notifications", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Lấy thông báo quản trị viên liên quan đến mạng lưới CTV",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách thông báo" } }
+});
+addOp("/api/admin/affiliate-commission-stats", "get", {
+  tags: ["Affiliate - User"],
+  summary: "Thống kê tổng hợp hoa hồng chi trả cho CTV",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Thống kê hoa hồng" } }
+});
+
+// 11. Affiliate - Guides & Terms
+addOp("/api/affiliate/guides", "get", {
+  tags: ["Affiliate - Guides & Terms"],
+  summary: "Lấy danh sách bài viết hướng dẫn bán hàng dành cho CTV",
+  responses: { 200: { description: "Danh sách hướng dẫn CTV" } }
+});
+addOp("/api/admin/affiliate-guides", "get", {
+  tags: ["Affiliate - Guides & Terms"],
+  summary: "Quản lý bài viết hướng dẫn CTV (Admin)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách quản trị hướng dẫn" } }
+});
+addOp("/api/admin/affiliate-guides", "post", {
+  tags: ["Affiliate - Guides & Terms"],
+  summary: "Tạo bài viết hướng dẫn CTV mới",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 201: { description: "Tạo hướng dẫn thành công" } }
+});
+addOp("/api/admin/affiliate-guides/{id}", "put", {
+  tags: ["Affiliate - Guides & Terms"],
+  summary: "Cập nhật bài viết hướng dẫn CTV",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/admin/affiliate-guides/{id}", "delete", {
+  tags: ["Affiliate - Guides & Terms"],
+  summary: "Xóa bài viết hướng dẫn CTV",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Xóa thành công" } }
+});
+addOp("/api/affiliate/settings/terms", "get", {
+  tags: ["Affiliate - Guides & Terms"],
+  summary: "Lấy nội dung Điều khoản & Chính sách chương trình CTV",
+  responses: { 200: { description: "Nội dung điều khoản CTV" } }
+});
+addOp("/api/admin/affiliate/settings/terms", "get", {
+  tags: ["Affiliate - Guides & Terms"],
+  summary: "Lấy cấu hình điều khoản CTV (Admin)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Cấu hình điều khoản" } }
+});
+addOp("/api/admin/affiliate/settings/terms", "put", {
+  tags: ["Affiliate - Guides & Terms"],
+  summary: "Cập nhật nội dung Điều khoản & Chính sách CTV",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: { terms: { type: "string" } } } } } },
+  responses: { 200: { description: "Cập nhật điều khoản thành công" } }
+});
+
+// 12. Blogs & News
+addOp("/api/blog-categories", "get", {
+  tags: ["Blogs & News"],
+  summary: "Lấy danh sách các danh mục bài viết blog",
+  responses: { 200: { description: "Danh sách danh mục blog" } }
+});
+addOp("/api/blogs", "get", {
+  tags: ["Blogs & News"],
+  summary: "Lấy danh sách bài viết blog (kèm tìm kiếm, phân trang, danh mục)",
+  parameters: [
+    { name: "category", in: "query", schema: { type: "string" } },
+    { name: "search", in: "query", schema: { type: "string" } },
+    { name: "page", in: "query", schema: { type: "integer", default: 1 } },
+    { name: "limit", in: "query", schema: { type: "integer", default: 9 } }
+  ],
+  responses: { 200: { description: "Danh sách bài viết" } }
+});
+addOp("/api/blogs/{id}", "get", {
+  tags: ["Blogs & News"],
+  summary: "Lấy chi tiết một bài viết blog theo ID hoặc Slug",
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Chi tiết bài viết" }, 404: { description: "Bài viết không tồn tại" } }
+});
+addOp("/api/admin/blog-categories", "post", {
+  tags: ["Blogs & News"],
+  summary: "Tạo danh mục blog mới (Admin)",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 201: { description: "Tạo danh mục blog thành công" } }
+});
+addOp("/api/admin/blog-categories/{id}", "put", {
+  tags: ["Blogs & News"],
+  summary: "Cập nhật danh mục blog",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/admin/blog-categories/{id}", "delete", {
+  tags: ["Blogs & News"],
+  summary: "Xóa danh mục blog",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Xóa thành công" } }
+});
+addOp("/api/admin/blogs", "post", {
+  tags: ["Blogs & News"],
+  summary: "Đăng bài viết blog mới",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 201: { description: "Tạo bài viết thành công" } }
+});
+addOp("/api/admin/blogs/{id}", "put", {
+  tags: ["Blogs & News"],
+  summary: "Cập nhật nội dung bài viết blog",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/admin/blogs/{id}", "delete", {
+  tags: ["Blogs & News"],
+  summary: "Xóa bài viết blog",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Xóa thành công" } }
+});
+
+// 13. Content & Settings
+addOp("/api/contact-info", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy thông tin liên hệ hỗ trợ người dùng",
+  responses: { 200: { description: "Thông tin liên hệ" } }
+});
+addOp("/api/faqs", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy danh sách các câu hỏi thường gặp (FAQ)",
+  responses: { 200: { description: "Danh sách FAQ" } }
+});
+addOp("/api/faq-settings", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy cấu hình hiển thị trang FAQ",
+  responses: { 200: { description: "Cấu hình FAQ" } }
+});
+addOp("/api/site-pages/{slug}", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy nội dung tĩnh của trang theo Slug (Giới thiệu, Chính sách, Điều khoản)",
+  parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Nội dung trang" }, 404: { description: "Trang không tồn tại" } }
+});
+addOp("/api/terms-of-service", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy nội dung Điều khoản dịch vụ người dùng",
+  responses: { 200: { description: "Nội dung điều khoản" } }
+});
+addOp("/api/purchase-guide", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy nội dung Hướng dẫn mua hàng & thanh toán",
+  responses: { 200: { description: "Nội dung hướng dẫn mua hàng" } }
+});
+addOp("/api/introduction", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy nội dung Giới thiệu về nền tảng EduLearn",
+  responses: { 200: { description: "Nội dung giới thiệu" } }
+});
+addOp("/api/contact-settings", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy cấu hình biểu mẫu và thông tin trang Liên hệ",
+  responses: { 200: { description: "Cấu hình trang liên hệ" } }
+});
+addOp("/api/admin/website-content", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy toàn bộ nội dung tĩnh website phục vụ chỉnh sửa (Admin)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Nội dung các trang tĩnh" } }
+});
+addOp("/api/admin/website-content/{section}", "put", {
+  tags: ["Content & Settings"],
+  summary: "Cập nhật nội dung một phân đoạn/trang website (terms, faq, guide, intro)",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "section", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/home-banner", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy cấu hình Banner và thông điệp đầu trang chủ",
+  responses: { 200: { description: "Cấu hình banner trang chủ" } }
+});
+addOp("/api/admin/home-banner", "put", {
+  tags: ["Content & Settings"],
+  summary: "Cập nhật banner và khẩu hiệu trang chủ (Admin)",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/site-settings", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy thông tin cấu hình chung website (Tên, Logo, Hotline, Mạng xã hội)",
+  responses: { 200: { description: "Cấu hình site" } }
+});
+addOp("/api/admin/site-settings", "get", {
+  tags: ["Content & Settings"],
+  summary: "Lấy cấu hình hệ thống đầy đủ (Admin)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Cấu hình hệ thống" } }
+});
+addOp("/api/admin/site-settings", "put", {
+  tags: ["Content & Settings"],
+  summary: "Cập nhật cấu hình hệ thống (Admin)",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật cấu hình thành công" } }
+});
+
+// 14. Email Service
+addOp("/api/email/status", "get", {
+  tags: ["Email Service"],
+  summary: "Kiểm tra trạng thái cấu hình máy chủ Email SMTP",
+  responses: { 200: { description: "Trạng thái Email" } }
+});
+addOp("/api/admin/email-config", "get", {
+  tags: ["Email Service"],
+  summary: "Lấy thông số cấu hình Email SMTP (Admin)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Thông số cấu hình Email" } }
+});
+addOp("/api/admin/email-config", "put", {
+  tags: ["Email Service"],
+  summary: "Cập nhật thông số kết nối Email SMTP (Admin)",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật Email config thành công" } }
+});
+
+// 15. Payment Methods
+addOp("/api/payment-methods", "get", {
+  tags: ["Payment Methods"],
+  summary: "Lấy danh sách các phương thức thanh toán đang hoạt động",
+  responses: { 200: { description: "Danh sách phương thức thanh toán" } }
+});
+addOp("/api/admin/payment-methods", "get", {
+  tags: ["Payment Methods"],
+  summary: "Quản lý danh sách phương thức thanh toán (Admin)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách quản trị" } }
+});
+addOp("/api/admin/payment-methods", "post", {
+  tags: ["Payment Methods"],
+  summary: "Thêm phương thức thanh toán mới",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 201: { description: "Tạo mới thành công" } }
+});
+addOp("/api/admin/payment-methods/{id}", "put", {
+  tags: ["Payment Methods"],
+  summary: "Cập nhật phương thức thanh toán",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/admin/payment-methods/{id}", "delete", {
+  tags: ["Payment Methods"],
+  summary: "Xóa phương thức thanh toán",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Xóa thành công" } }
+});
+
+// 16. Admin - Management & User Notifications
+addOp("/api/my-notifications", "get", {
+  tags: ["Users & Profile"],
+  summary: "Lấy danh sách thông báo của người dùng",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách thông báo" } }
+});
+addOp("/api/admin/notifications", "get", {
+  tags: ["Admin - Management"],
+  summary: "Lấy thông báo của ban quản trị hệ thống",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách thông báo Admin" } }
+});
+addOp("/api/admin/accounts", "get", {
+  tags: ["Admin - Management"],
+  summary: "Lấy danh sách tài khoản nội bộ (Admin, Manager, Staff)",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách tài khoản nội bộ" } }
+});
+addOp("/api/admin/accounts", "post", {
+  tags: ["Admin - Management"],
+  summary: "Tạo tài khoản nhân sự quản trị mới",
+  security: [{ BearerAuth: [] }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 201: { description: "Tạo tài khoản thành công" } }
+});
+addOp("/api/admin/accounts/{id}", "put", {
+  tags: ["Admin - Management"],
+  summary: "Cập nhật thông tin/vai trò tài khoản nhân sự",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật thành công" } }
+});
+addOp("/api/admin/accounts/{id}/status", "patch", {
+  tags: ["Admin - Management"],
+  summary: "Khóa hoặc mở khóa tài khoản nhân sự",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật trạng thái thành công" } }
+});
+addOp("/api/admin/users", "get", {
+  tags: ["Admin - Management"],
+  summary: "Lấy danh sách toàn bộ người dùng / học viên",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Danh sách người dùng" } }
+});
+addOp("/api/admin/users/{id}/orders", "get", {
+  tags: ["Admin - Management"],
+  summary: "Xem lịch sử mua hàng của một người dùng",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  responses: { 200: { description: "Lịch sử đơn hàng của người dùng" } }
+});
+addOp("/api/admin/users/{id}/status", "patch", {
+  tags: ["Admin - Management"],
+  summary: "Khóa hoặc kích hoạt lại tài khoản người dùng",
+  security: [{ BearerAuth: [] }],
+  parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+  requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
+  responses: { 200: { description: "Cập nhật trạng thái người dùng thành công" } }
+});
+
+// 17. Admin - Statistics
+addOp("/api/admin/stats", "get", {
+  tags: ["Admin - Statistics"],
+  summary: "Thống kê tổng quan Dashboard: Doanh thu, Đơn hàng, Khóa học, Học viên",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Số liệu thống kê tổng hợp" } }
+});
+addOp("/api/admin/stats/monthly", "get", {
+  tags: ["Admin - Statistics"],
+  summary: "Thống kê biểu đồ doanh thu theo từng tháng trong năm",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Biểu đồ doanh thu hàng tháng" } }
+});
+addOp("/api/admin/stats/monthly-cumulative", "get", {
+  tags: ["Admin - Statistics"],
+  summary: "Thống kê biểu đồ doanh thu lũy kế qua các tháng",
+  security: [{ BearerAuth: [] }],
+  responses: { 200: { description: "Doanh thu lũy kế" } }
+});
+
+// 18. Media & Uploads
+addOp("/api/admin/upload-image", "post", {
+  tags: ["Media & Uploads"],
+  summary: "Tải lên hình ảnh đơn hoặc hàng loạt (Multipart form-data)",
+  security: [{ BearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      "multipart/form-data": {
+        schema: {
+          type: "object",
+          properties: {
+            image: { type: "string", format: "binary" }
+          }
+        }
+      }
+    }
+  },
+  responses: { 200: { description: "Tải ảnh lên thành công, trả về URL ảnh" } }
+});
+
+// Calculate total operations
+let totalOps = 0;
+for (const p in fullOpenapi.paths) {
+  for (const m in fullOpenapi.paths[p]) {
+    totalOps++;
+  }
+}
+
+console.log(`Generated OpenAPI spec with ${totalOps} operations across ${Object.keys(fullOpenapi.paths).length} paths.`);
+
+const formattedJson = JSON.stringify(fullOpenapi, null, 2);
+
+// Write to backend/openapi.json
+fs.writeFileSync(path.join(__dirname, 'edu-learn-project', 'backend', 'openapi.json'), formattedJson, 'utf8');
+console.log('✓ Updated edu-learn-project/backend/openapi.json');
+
+// Write to edu-learn-doc/openapi.json
+fs.writeFileSync(path.join(__dirname, 'edu-learn-doc', 'openapi.json'), formattedJson, 'utf8');
+console.log('✓ Updated edu-learn-doc/openapi.json');

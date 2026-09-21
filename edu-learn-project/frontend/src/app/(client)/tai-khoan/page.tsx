@@ -15,11 +15,11 @@ import { Coupon } from '@/types';
 
 // Sidebar nav items
 const NAV_ITEMS = [
-  { id: 'overview', icon: '🏠', label: 'Tổng quan', href: '/tai-khoan' },
-  { id: 'orders', icon: '📋', label: 'Đơn hàng', href: '/tai-khoan/don-hang' },
-  { id: 'courses', icon: '📚', label: 'Khoá học', href: '/tai-khoan/khoa-hoc' },
-  { id: 'affiliate', icon: '🔗', label: 'Chương trình tiếp thị liên kết', href: '/tai-khoan/affiliate' },
-  { id: 'settings', icon: '⚙️', label: 'Cài đặt tài khoản', href: '/tai-khoan/cai-dat' },
+  { id: 'overview', icon: '🏠', label: 'Tổng quan', href: '/tai-khoan?tab=overview' },
+  { id: 'orders', icon: '📋', label: 'Đơn hàng', href: '/tai-khoan?tab=orders' },
+  { id: 'courses', icon: '📚', label: 'Khoá học', href: '/tai-khoan?tab=courses' },
+  { id: 'affiliate', icon: '🔗', label: 'Chương trình tiếp thị liên kết', href: '/tai-khoan?tab=affiliate' },
+  { id: 'settings', icon: '⚙️', label: 'Cài đặt tài khoản', href: '/tai-khoan?tab=settings' },
 ];
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
