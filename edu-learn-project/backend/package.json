@@ -10,7 +10,8 @@
     "lint:fix": "eslint . --fix",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:ord517": "node --test tests/ord-517-auth-middleware.test.js",
-    "test:ord517:coverage": "node --test --experimental-test-coverage tests/ord-517-auth-middleware.test.js"
+    "test:ord517:coverage": "node --test --experimental-test-coverage tests/ord-517-auth-middleware.test.js",
+    "test:ord516": "node --test tests/ord-516-registration-branches.test.js"
   },
   "keywords": [],
   "author": "",
