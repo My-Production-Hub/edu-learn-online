@@ -2,13 +2,7 @@
 
 const { getDatabase } = require('./db.js');
 
-async function migrate() {
-  const db = await getDatabase();
-  console.log('🚀 Bắt đầu cập nhật cấu trúc schema CSDL...');
-  
-  await db.exec('PRAGMA foreign_keys = OFF;');
-  
-  // 1. Cập nhật bảng orders
+async function migrateOrdersTable(db) {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS orders_new (
       id TEXT PRIMARY KEY,
@@ -23,20 +17,17 @@ async function migrate() {
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT
     );
   `);
-
-  // Kiểm tra các cột có sẵn trong orders để copy chính xác
   const orderColumns = await db.all("PRAGMA table_info(orders)");
   const colNames = orderColumns.map(c => c.name).join(', ');
   await db.exec(`INSERT OR IGNORE INTO orders_new (${colNames}) SELECT ${colNames} FROM orders;`);
   await db.exec(`DROP TABLE orders; ALTER TABLE orders_new RENAME TO orders;`);
-
-  // Đảm bảo tạo lại indexes cho bảng orders
   await db.exec(`
     CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders (user_id);
     CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status);
   `);
+}
 
-  // 2. Cập nhật bảng order_details
+async function migrateOrderDetailsTable(db) {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS order_details_new (
       order_id TEXT,
@@ -48,14 +39,20 @@ async function migrate() {
       FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE RESTRICT
     );
   `);
-
   const odColumns = await db.all("PRAGMA table_info(order_details)");
   const odColNames = odColumns.map(c => c.name).join(', ');
   await db.exec(`INSERT OR IGNORE INTO order_details_new (${odColNames}) SELECT ${odColNames} FROM order_details;`);
   await db.exec(`DROP TABLE order_details; ALTER TABLE order_details_new RENAME TO order_details;`);
+}
 
+async function migrate() {
+  const db = await getDatabase();
+  console.log('🚀 Bắt đầu cập nhật cấu trúc schema CSDL...');
+  await db.exec('PRAGMA foreign_keys = OFF;');
+  await migrateOrdersTable(db);
+  await migrateOrderDetailsTable(db);
   await db.exec('PRAGMA foreign_keys = ON;');
-  console.log('✅ Đã cập nhật xong 100% schema bảng orders và order_details trong file database.sqlite!');
+  console.log('✅ Đã cập nhật xong 100% schema bảng orders và order_details!');
 }
 
 migrate().then(() => process.exit(0)).catch(err => {
