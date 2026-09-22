@@ -20,8 +20,8 @@ Chương trình Affiliate cho phép bạn tạo thu nhập thụ động bằng 
 ### Các bước tham gia:
 1. Đăng nhập vào hệ thống EduLearn.
 2. Điều hướng đến mục **Tài khoản cá nhân → Tab Tiếp thị liên kết** (đường dẫn: `/tai-khoan?tab=affiliate`).
-3. Nhấn nút **Đăng ký tham gia CTV**.
-4. Điền các thông tin liên hệ và gửi đơn đăng ký.
+3. Nhấn nút **`Đăng ký ngay`** (hoặc **`Đăng ký lại ngay`** nếu đơn trước bị từ chối).
+4. Điền các thông tin liên hệ và nhấn **`Đăng ký`** để gửi đơn xét duyệt.
 
 ### Vòng đời trạng thái tài khoản Affiliate:
 Hệ thống quản lý trạng thái tài khoản CTV theo 4 trạng thái chuẩn:
@@ -30,7 +30,7 @@ Hệ thống quản lý trạng thái tài khoản CTV theo 4 trạng thái chu�
 |:---|:---|:---|
 | `pending` | **Chờ duyệt** | Đơn đăng ký đã gửi và đang chờ Ban quản trị xét duyệt thông tin. |
 | `approved` | **Đã kích hoạt** | Đã được phê duyệt chính thức, được cấp mã giới thiệu riêng và bắt đầu kiếm hoa hồng. |
-| `rejected` | **Từ chối** | Đơn đăng ký chưa đạt yêu cầu của hệ thống (có thể đăng ký lại khi bổ sung thông tin). |
+| `rejected` | **Từ chối** | Đơn đăng ký chưa đạt yêu cầu của hệ thống (có thể nhấn **`🔄 Đăng ký lại`** khi bổ sung thông tin). |
 | `terminated` | **Đã chấm dứt** | Tài khoản CTV bị tạm ngừng hoặc thu hồi quyền hoạt động do vi phạm chính sách. |
 
 ---
@@ -61,10 +61,11 @@ Sau khi tài khoản đạt trạng thái `approved`, giao diện Affiliate Dash
 3. Tài khoản nhận tiền phải là tài khoản ngân hàng chính chủ tại Việt Nam.
 
 ### Các bước gửi yêu cầu rút tiền:
-1. Tại trang **Tài khoản → Affiliate**, nhấn nút **Yêu cầu rút tiền**.
-2. Nhập **Số tiền cần rút** (tối thiểu `50.000đ` và không vượt quá số dư khả dụng).
-3. Chọn **Tên ngân hàng** và nhập chính xác **Số tài khoản**, **Tên chủ tài khoản**.
-4. Nhấn **Gửi yêu cầu rút tiền**.
+1. Tại trang **Tài khoản → Tab Affiliate** (`/tai-khoan?tab=affiliate`), tìm đến khung **Rút tiền** và nhấn nút **`Xem Rút Tiền`**.
+2. Khi form **Yêu cầu rút tiền** hiển thị, nhập **Số tiền cần rút** (tối thiểu `50.000đ` và không vượt quá số dư khả dụng).
+3. Chọn **Tên ngân hàng** và nhập chính xác **Số tài khoản**, **Tên chủ tài khoản** thụ hưởng.
+4. Nhấn nút **`Gửi yêu cầu rút tiền`**.
+5. Bạn có thể bấm nút **`Lịch sử rút tiền`** ngay bên dưới để theo dõi trạng thái các lệnh rút đã tạo.
 
 ### Vòng đời trạng thái yêu cầu rút tiền:
 | Trạng thái | Tên hiển thị | Ý nghĩa |
