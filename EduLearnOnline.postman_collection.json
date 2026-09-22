@@ -1,9 +1,8 @@
-
 {
   "info": {
     "_postman_id": "17179d09-915f-41f6-b30e-16c704b9a147",
     "name": "EduLearnOnline API Testing Collection v3",
-    "description": "Bộ kiểm thử API dùng chung cho EduLearnOnline, Re-tested after bug fixes on 16/09/2026.",
+    "description": "Bộ kiểm thử API dùng chung cho EduLearnOnline, Re-tested after bug fixes on 16/09/2026.\nBổ sung BVA theo Chương 4: sửa nhãn BVA chưa đúng ở Courses; bổ sung đầy đủ các case quanh biên dưới cho Coupon (99999, 100000, 100001, nominal 300000) và Password length (7, 8, 9, nominal 10). Các requirement này chỉ có lower boundary nên không tự đặt max.\nBổ sung thêm 4 test case BVA cho Course price_range tại boundary 1.000.000đ: 999.999 under1m; 1.000.000 excluded from under1m; 1.000.000 included in over1m; 1.000.001 over1m.\nBVA mở rộng phục vụ vấn đáp Postman: thêm phone length 9/10/11 và Course under500k với 250000/499999/500000/500001.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "56973388",
     "_collection_link": "https://go.postman.co/collection/56973388-17179d09-915f-41f6-b30e-16c704b9a147?source=collection_link"
@@ -406,9 +405,444 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "1.9 [EP-X1][BVA min-1] POST /auth/register - Password 7 ký tự",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const suffix = runId.slice(-8);",
+                  "pm.variables.set('bvaEmail', `pwd-min-1_${runId}@edulearn.test`);",
+                  "pm.variables.set('bvaPhone', `09${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PWD-MIN-1 - HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('BVA: dưới biên 8 ký tự phải bị từ chối', () => {",
+                  "  const msg = String(pm.response.json().message || '').toLowerCase();",
+                  "  pm.expect(msg).to.include('mật khẩu');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"BVA Password Test\",\n  \"email\": \"{{bvaEmail}}\",\n  \"password\": \"Aa1!abc\",\n  \"phone\": \"{{bvaPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.10 [EP-V1][BVA min] POST /auth/register - Password 8 ký tự",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const suffix = runId.slice(-8);",
+                  "pm.variables.set('bvaEmail', `pwd-min_${runId}@edulearn.test`);",
+                  "pm.variables.set('bvaPhone', `09${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PWD-MIN - HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('BVA: tại/trên biên 8 ký tự phải hợp lệ', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"BVA Password Test\",\n  \"email\": \"{{bvaEmail}}\",\n  \"password\": \"Aa1!abcd\",\n  \"phone\": \"{{bvaPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.11 [EP-V1][BVA min+] POST /auth/register - Password 9 ký tự",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const suffix = runId.slice(-8);",
+                  "pm.variables.set('bvaEmail', `pwd-minplus_${runId}@edulearn.test`);",
+                  "pm.variables.set('bvaPhone', `09${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PWD-MINPLUS - HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('BVA: tại/trên biên 8 ký tự phải hợp lệ', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"BVA Password Test\",\n  \"email\": \"{{bvaEmail}}\",\n  \"password\": \"Aa1!abcde\",\n  \"phone\": \"{{bvaPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.12 [EP-V1][BVA nominal] POST /auth/register - Password 10 ký tự",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const suffix = runId.slice(-8);",
+                  "pm.variables.set('bvaEmail', `pwd-nominal_${runId}@edulearn.test`);",
+                  "pm.variables.set('bvaPhone', `09${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PWD-NOMINAL - HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('BVA: tại/trên biên 8 ký tự phải hợp lệ', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"BVA Password Test\",\n  \"email\": \"{{bvaEmail}}\",\n  \"password\": \"Pass123!@#\",\n  \"phone\": \"{{bvaPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.13 [EP-X2][BVA length-1] POST /auth/register - Phone 9 chữ số",
+          "description": "9 chữ số = length-1, phải bị từ chối",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const suffix = runId.slice(-8);",
+                  "pm.variables.set('bvaPhoneEmail', `bva_phone_${runId}@edulearn.test`);",
+                  "const validPhone = `09${suffix}`;",
+                  "pm.variables.set('bvaPhone', validPhone.slice(0, 9));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('9 chữ số = length-1, phải bị từ chối', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('message');",
+                  "  pm.expect(String(json.message).toLowerCase()).to.include('số điện thoại');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"BVA Phone Length\",\n  \"email\": \"{{bvaPhoneEmail}}\",\n  \"password\": \"Pass123!@#\",\n  \"phone\": \"{{bvaPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.14 [EP-V2][BVA length] POST /auth/register - Phone 10 chữ số",
+          "description": "10 chữ số = đúng độ dài hợp lệ, phải được chấp nhận",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const suffix = runId.slice(-8);",
+                  "pm.variables.set('bvaPhoneEmail', `bva_phone_${runId}@edulearn.test`);",
+                  "const validPhone = `09${suffix}`;",
+                  "pm.variables.set('bvaPhone', validPhone);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('10 chữ số = đúng độ dài hợp lệ, phải được chấp nhận', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"BVA Phone Length\",\n  \"email\": \"{{bvaPhoneEmail}}\",\n  \"password\": \"Pass123!@#\",\n  \"phone\": \"{{bvaPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.15 [EP-X2][BVA length+1] POST /auth/register - Phone 11 chữ số",
+          "description": "11 chữ số = length+1, phải bị từ chối",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const suffix = runId.slice(-8);",
+                  "pm.variables.set('bvaPhoneEmail', `bva_phone_${runId}@edulearn.test`);",
+                  "const validPhone = `09${suffix}`;",
+                  "pm.variables.set('bvaPhone', `${validPhone}1`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('11 chữ số = length+1, phải bị từ chối', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('message');",
+                  "  pm.expect(String(json.message).toLowerCase()).to.include('số điện thoại');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"BVA Phone Length\",\n  \"email\": \"{{bvaPhoneEmail}}\",\n  \"password\": \"Pass123!@#\",\n  \"phone\": \"{{bvaPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
         }
       ],
-      "description": "Đăng ký, đăng nhập, validation, JWT và hồ sơ người dùng."
+      "description": "Đăng ký, đăng nhập, validation, JWT và hồ sơ người dùng. BVA bổ sung: password lower boundary = 8 ký tự; phone có đúng 10 chữ số nên kiểm tra 9/10/11 chữ số."
     },
     {
       "name": "2. Courses API (ORD-326)",
@@ -504,7 +938,7 @@
           "response": []
         },
         {
-          "name": "2.3 [Sort+BVA] GET /courses?sort_by=price-asc",
+          "name": "2.3 [Sort] GET /courses?sort_by=price-asc",
           "event": [
             {
               "listen": "test",
@@ -650,7 +1084,7 @@
           "response": []
         },
         {
-          "name": "2.7 [Filter+BVA] GET /courses?price_range=free",
+          "name": "2.7 [Filter] GET /courses?price_range=free",
           "event": [
             {
               "listen": "test",
@@ -687,9 +1121,701 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "2.8 [BVA Chapter 4] Price Range - Boundary 1.000.000",
+          "description": "Biên nghiệp vụ 1.000.000đ được dùng bởi hai lớp tương đương: under1m: price < 1.000.000 và over1m: price >= 1.000.000. Dùng 3 giá trị biên 999.999, 1.000.000, 1.000.001; giá trị đúng biên 1.000.000 được kiểm tra ở cả hai filter nên có 4 test case.",
+          "item": [
+            {
+              "name": "2.8.1 [EP-U1][BVA boundary-1] under1m - price=999.999",
+              "description": "999.999 < 1.000.000 nên phải thuộc lớp under1m",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "if (!adminToken) throw new Error('Cần chạy request 1.4 trước để có adminToken.');",
+                      "const title = `BVA_PRICE_999999_${Date.now()}`;",
+                      "pm.collectionVariables.set('bvaCourseTitle_2_8_1', title);",
+                      "pm.sendRequest({",
+                      "  url: `${baseUrl}/api/admin/courses`,",
+                      "  method: 'POST',",
+                      "  header: {",
+                      "    'Content-Type': 'application/json',",
+                      "    'Authorization': `Bearer ${adminToken}`",
+                      "  },",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({ title, description: 'BVA Chapter 4', price: 999999, status: 'published' })",
+                      "  }",
+                      "}, (error, response) => {",
+                      "  if (error) throw error;",
+                      "  if (response.code !== 200) throw new Error(`Không tạo được course BVA: HTTP ${response.code}`);",
+                      "  pm.collectionVariables.set('bvaCourseId_2_8_1', response.json().id);",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('[EP-U1][BVA boundary-1] under1m - 999.999 < 1.000.000 nên phải thuộc lớp under1m', () => {",
+                      "  const list = pm.response.json();",
+                      "  pm.expect(list).to.be.an('array');",
+                      "  const title = pm.collectionVariables.get('bvaCourseTitle_2_8_1');",
+                      "  const found = list.some(c => c.title === title);",
+                      "  pm.expect(found).to.equal(true);",
+                      "});",
+                      "",
+                      "// Cleanup dữ liệu fixture sau khi test",
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "const courseId = pm.collectionVariables.get('bvaCourseId_2_8_1');",
+                      "if (courseId && adminToken) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/api/admin/courses/${courseId}`,",
+                      "    method: 'DELETE',",
+                      "    header: { 'Authorization': `Bearer ${adminToken}` }",
+                      "  }, () => {});",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses?search={{bvaCourseTitle_2_8_1}}&price_range=under1m",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "{{bvaCourseTitle_2_8_1}}"
+                    },
+                    {
+                      "key": "price_range",
+                      "value": "under1m"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2.8.2 [EP-U2][BVA boundary] under1m - price=1.000.000",
+              "description": "1.000.000 không còn < 1.000.000 nên phải bị loại khỏi under1m",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "if (!adminToken) throw new Error('Cần chạy request 1.4 trước để có adminToken.');",
+                      "const title = `BVA_PRICE_1000000_${Date.now()}`;",
+                      "pm.collectionVariables.set('bvaCourseTitle_2_8_2', title);",
+                      "pm.sendRequest({",
+                      "  url: `${baseUrl}/api/admin/courses`,",
+                      "  method: 'POST',",
+                      "  header: {",
+                      "    'Content-Type': 'application/json',",
+                      "    'Authorization': `Bearer ${adminToken}`",
+                      "  },",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({ title, description: 'BVA Chapter 4', price: 1000000, status: 'published' })",
+                      "  }",
+                      "}, (error, response) => {",
+                      "  if (error) throw error;",
+                      "  if (response.code !== 200) throw new Error(`Không tạo được course BVA: HTTP ${response.code}`);",
+                      "  pm.collectionVariables.set('bvaCourseId_2_8_2', response.json().id);",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('[EP-U2][BVA boundary] under1m - 1.000.000 không còn < 1.000.000 nên phải bị loại khỏi under1m', () => {",
+                      "  const list = pm.response.json();",
+                      "  pm.expect(list).to.be.an('array');",
+                      "  const title = pm.collectionVariables.get('bvaCourseTitle_2_8_2');",
+                      "  const found = list.some(c => c.title === title);",
+                      "  pm.expect(found).to.equal(false);",
+                      "});",
+                      "",
+                      "// Cleanup dữ liệu fixture sau khi test",
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "const courseId = pm.collectionVariables.get('bvaCourseId_2_8_2');",
+                      "if (courseId && adminToken) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/api/admin/courses/${courseId}`,",
+                      "    method: 'DELETE',",
+                      "    header: { 'Authorization': `Bearer ${adminToken}` }",
+                      "  }, () => {});",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses?search={{bvaCourseTitle_2_8_2}}&price_range=under1m",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "{{bvaCourseTitle_2_8_2}}"
+                    },
+                    {
+                      "key": "price_range",
+                      "value": "under1m"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2.8.3 [EP-O1][BVA boundary] over1m - price=1.000.000",
+              "description": "1.000.000 >= 1.000.000 nên phải thuộc lớp over1m",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "if (!adminToken) throw new Error('Cần chạy request 1.4 trước để có adminToken.');",
+                      "const title = `BVA_PRICE_1000000_${Date.now()}`;",
+                      "pm.collectionVariables.set('bvaCourseTitle_2_8_3', title);",
+                      "pm.sendRequest({",
+                      "  url: `${baseUrl}/api/admin/courses`,",
+                      "  method: 'POST',",
+                      "  header: {",
+                      "    'Content-Type': 'application/json',",
+                      "    'Authorization': `Bearer ${adminToken}`",
+                      "  },",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({ title, description: 'BVA Chapter 4', price: 1000000, status: 'published' })",
+                      "  }",
+                      "}, (error, response) => {",
+                      "  if (error) throw error;",
+                      "  if (response.code !== 200) throw new Error(`Không tạo được course BVA: HTTP ${response.code}`);",
+                      "  pm.collectionVariables.set('bvaCourseId_2_8_3', response.json().id);",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('[EP-O1][BVA boundary] over1m - 1.000.000 >= 1.000.000 nên phải thuộc lớp over1m', () => {",
+                      "  const list = pm.response.json();",
+                      "  pm.expect(list).to.be.an('array');",
+                      "  const title = pm.collectionVariables.get('bvaCourseTitle_2_8_3');",
+                      "  const found = list.some(c => c.title === title);",
+                      "  pm.expect(found).to.equal(true);",
+                      "});",
+                      "",
+                      "// Cleanup dữ liệu fixture sau khi test",
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "const courseId = pm.collectionVariables.get('bvaCourseId_2_8_3');",
+                      "if (courseId && adminToken) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/api/admin/courses/${courseId}`,",
+                      "    method: 'DELETE',",
+                      "    header: { 'Authorization': `Bearer ${adminToken}` }",
+                      "  }, () => {});",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses?search={{bvaCourseTitle_2_8_3}}&price_range=over1m",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "{{bvaCourseTitle_2_8_3}}"
+                    },
+                    {
+                      "key": "price_range",
+                      "value": "over1m"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2.8.4 [EP-O1][BVA boundary+1] over1m - price=1.000.001",
+              "description": "1.000.001 > 1.000.000 nên vẫn thuộc lớp over1m",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "if (!adminToken) throw new Error('Cần chạy request 1.4 trước để có adminToken.');",
+                      "const title = `BVA_PRICE_1000001_${Date.now()}`;",
+                      "pm.collectionVariables.set('bvaCourseTitle_2_8_4', title);",
+                      "pm.sendRequest({",
+                      "  url: `${baseUrl}/api/admin/courses`,",
+                      "  method: 'POST',",
+                      "  header: {",
+                      "    'Content-Type': 'application/json',",
+                      "    'Authorization': `Bearer ${adminToken}`",
+                      "  },",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({ title, description: 'BVA Chapter 4', price: 1000001, status: 'published' })",
+                      "  }",
+                      "}, (error, response) => {",
+                      "  if (error) throw error;",
+                      "  if (response.code !== 200) throw new Error(`Không tạo được course BVA: HTTP ${response.code}`);",
+                      "  pm.collectionVariables.set('bvaCourseId_2_8_4', response.json().id);",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('[EP-O1][BVA boundary+1] over1m - 1.000.001 > 1.000.000 nên vẫn thuộc lớp over1m', () => {",
+                      "  const list = pm.response.json();",
+                      "  pm.expect(list).to.be.an('array');",
+                      "  const title = pm.collectionVariables.get('bvaCourseTitle_2_8_4');",
+                      "  const found = list.some(c => c.title === title);",
+                      "  pm.expect(found).to.equal(true);",
+                      "});",
+                      "",
+                      "// Cleanup dữ liệu fixture sau khi test",
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "const courseId = pm.collectionVariables.get('bvaCourseId_2_8_4');",
+                      "if (courseId && adminToken) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/api/admin/courses/${courseId}`,",
+                      "    method: 'DELETE',",
+                      "    header: { 'Authorization': `Bearer ${adminToken}` }",
+                      "  }, () => {});",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses?search={{bvaCourseTitle_2_8_4}}&price_range=over1m",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "{{bvaCourseTitle_2_8_4}}"
+                    },
+                    {
+                      "key": "price_range",
+                      "value": "over1m"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "2.9 [BVA Chapter 4] Price Range under500k - Boundary 500.000",
+          "description": "Requirement thực tế: under500k dùng điều kiện price < 500000. Do đây là biên trên dạng strict (<), dùng nominal 250000, boundary-1=499999, boundary=500000 và boundary+1=500001.",
+          "item": [
+            {
+              "name": "2.9.1 [EP-V3][BVA nominal] GET /courses?price_range=under500k - price=250.000",
+              "description": "250.000 là nominal trong lớp hợp lệ price < 500.000",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "if (!adminToken) throw new Error('Cần chạy request 1.4 trước để có adminToken.');",
+                      "const title = `BVA_500K_250000_${Date.now()}`;",
+                      "pm.collectionVariables.set('bva500Title_2_9_1', title);",
+                      "pm.sendRequest({",
+                      "  url: `${baseUrl}/api/admin/courses`,",
+                      "  method: 'POST',",
+                      "  header: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({ title, description: 'BVA under500k', price: 250000, status: 'published' })",
+                      "  }",
+                      "}, (error, response) => {",
+                      "  if (error) throw error;",
+                      "  if (response.code !== 200) throw new Error(`Không tạo được course BVA: HTTP ${response.code}`);",
+                      "  pm.collectionVariables.set('bva500Id_2_9_1', response.json().id);",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('250.000 là nominal trong lớp hợp lệ price < 500.000', () => {",
+                      "  const list = pm.response.json();",
+                      "  const title = pm.collectionVariables.get('bva500Title_2_9_1');",
+                      "  const found = list.some(c => c.title === title);",
+                      "  pm.expect(found).to.equal(true);",
+                      "});",
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "const courseId = pm.collectionVariables.get('bva500Id_2_9_1');",
+                      "if (courseId && adminToken) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/api/admin/courses/${courseId}`,",
+                      "    method: 'DELETE',",
+                      "    header: { 'Authorization': `Bearer ${adminToken}` }",
+                      "  }, () => {});",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses?search={{bva500Title_2_9_1}}&price_range=under500k",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "{{bva500Title_2_9_1}}"
+                    },
+                    {
+                      "key": "price_range",
+                      "value": "under500k"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2.9.2 [EP-V3][BVA boundary-1] GET /courses?price_range=under500k - price=499.999",
+              "description": "499.999 ngay dưới biên nên phải thuộc under500k",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "if (!adminToken) throw new Error('Cần chạy request 1.4 trước để có adminToken.');",
+                      "const title = `BVA_500K_499999_${Date.now()}`;",
+                      "pm.collectionVariables.set('bva500Title_2_9_2', title);",
+                      "pm.sendRequest({",
+                      "  url: `${baseUrl}/api/admin/courses`,",
+                      "  method: 'POST',",
+                      "  header: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({ title, description: 'BVA under500k', price: 499999, status: 'published' })",
+                      "  }",
+                      "}, (error, response) => {",
+                      "  if (error) throw error;",
+                      "  if (response.code !== 200) throw new Error(`Không tạo được course BVA: HTTP ${response.code}`);",
+                      "  pm.collectionVariables.set('bva500Id_2_9_2', response.json().id);",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('499.999 ngay dưới biên nên phải thuộc under500k', () => {",
+                      "  const list = pm.response.json();",
+                      "  const title = pm.collectionVariables.get('bva500Title_2_9_2');",
+                      "  const found = list.some(c => c.title === title);",
+                      "  pm.expect(found).to.equal(true);",
+                      "});",
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "const courseId = pm.collectionVariables.get('bva500Id_2_9_2');",
+                      "if (courseId && adminToken) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/api/admin/courses/${courseId}`,",
+                      "    method: 'DELETE',",
+                      "    header: { 'Authorization': `Bearer ${adminToken}` }",
+                      "  }, () => {});",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses?search={{bva500Title_2_9_2}}&price_range=under500k",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "{{bva500Title_2_9_2}}"
+                    },
+                    {
+                      "key": "price_range",
+                      "value": "under500k"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2.9.3 [EP-X3][BVA boundary] GET /courses?price_range=under500k - price=500.000",
+              "description": "500.000 không thỏa price < 500.000 nên phải bị loại",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "if (!adminToken) throw new Error('Cần chạy request 1.4 trước để có adminToken.');",
+                      "const title = `BVA_500K_500000_${Date.now()}`;",
+                      "pm.collectionVariables.set('bva500Title_2_9_3', title);",
+                      "pm.sendRequest({",
+                      "  url: `${baseUrl}/api/admin/courses`,",
+                      "  method: 'POST',",
+                      "  header: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({ title, description: 'BVA under500k', price: 500000, status: 'published' })",
+                      "  }",
+                      "}, (error, response) => {",
+                      "  if (error) throw error;",
+                      "  if (response.code !== 200) throw new Error(`Không tạo được course BVA: HTTP ${response.code}`);",
+                      "  pm.collectionVariables.set('bva500Id_2_9_3', response.json().id);",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('500.000 không thỏa price < 500.000 nên phải bị loại', () => {",
+                      "  const list = pm.response.json();",
+                      "  const title = pm.collectionVariables.get('bva500Title_2_9_3');",
+                      "  const found = list.some(c => c.title === title);",
+                      "  pm.expect(found).to.equal(false);",
+                      "});",
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "const courseId = pm.collectionVariables.get('bva500Id_2_9_3');",
+                      "if (courseId && adminToken) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/api/admin/courses/${courseId}`,",
+                      "    method: 'DELETE',",
+                      "    header: { 'Authorization': `Bearer ${adminToken}` }",
+                      "  }, () => {});",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses?search={{bva500Title_2_9_3}}&price_range=under500k",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "{{bva500Title_2_9_3}}"
+                    },
+                    {
+                      "key": "price_range",
+                      "value": "under500k"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2.9.4 [EP-X3][BVA boundary+1] GET /courses?price_range=under500k - price=500.001",
+              "description": "500.001 trên biên nên phải bị loại khỏi under500k",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "if (!adminToken) throw new Error('Cần chạy request 1.4 trước để có adminToken.');",
+                      "const title = `BVA_500K_500001_${Date.now()}`;",
+                      "pm.collectionVariables.set('bva500Title_2_9_4', title);",
+                      "pm.sendRequest({",
+                      "  url: `${baseUrl}/api/admin/courses`,",
+                      "  method: 'POST',",
+                      "  header: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({ title, description: 'BVA under500k', price: 500001, status: 'published' })",
+                      "  }",
+                      "}, (error, response) => {",
+                      "  if (error) throw error;",
+                      "  if (response.code !== 200) throw new Error(`Không tạo được course BVA: HTTP ${response.code}`);",
+                      "  pm.collectionVariables.set('bva500Id_2_9_4', response.json().id);",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('500.001 trên biên nên phải bị loại khỏi under500k', () => {",
+                      "  const list = pm.response.json();",
+                      "  const title = pm.collectionVariables.get('bva500Title_2_9_4');",
+                      "  const found = list.some(c => c.title === title);",
+                      "  pm.expect(found).to.equal(false);",
+                      "});",
+                      "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                      "const adminToken = pm.collectionVariables.get('adminToken') || pm.environment.get('adminToken');",
+                      "const courseId = pm.collectionVariables.get('bva500Id_2_9_4');",
+                      "if (courseId && adminToken) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/api/admin/courses/${courseId}`,",
+                      "    method: 'DELETE',",
+                      "    header: { 'Authorization': `Bearer ${adminToken}` }",
+                      "  }, () => {});",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses?search={{bva500Title_2_9_4}}&price_range=under500k",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "{{bva500Title_2_9_4}}"
+                    },
+                    {
+                      "key": "price_range",
+                      "value": "under500k"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
         }
       ],
-      "description": "Danh sách, schema, lọc danh mục, sắp xếp, tìm kiếm, chi tiết và giá miễn phí."
+      "description": "Danh sách, schema, lọc danh mục, sắp xếp, tìm kiếm, chi tiết và giá. BVA rõ tại 2 ngưỡng: 500.000đ cho under500k và 1.000.000đ cho under1m/over1m."
     },
     {
       "name": "3. Coupons API (ORD-327)",
@@ -931,18 +2057,20 @@
           "response": []
         },
         {
-          "name": "3.5 [BVA] POST /coupons/validate - Dưới giá trị đơn tối thiểu",
+          "name": "3.5.1 [EP-X1][BVA min-1] POST /coupons/validate - order_amount 99.999",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 400 dưới min order', () => pm.response.to.have.status(400));",
-                  "pm.test('Trả đúng min_order_amount', () => {",
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('BVA - valid đúng expected', () => {",
                   "  const json = pm.response.json();",
                   "  pm.expect(json.valid).to.equal(false);",
-                  "  pm.expect(json.min_order_amount).to.equal(100000);",
+                  "});",
+                  "pm.test('BVA min-1: backend trả đúng min_order_amount=100000', () => {",
+                  "  pm.expect(pm.response.json().min_order_amount).to.equal(100000);",
                   "});"
                 ]
               }
@@ -960,6 +2088,159 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"code\": \"{{couponMinCode}}\",\n  \"order_amount\": 99999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/coupons/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "coupons",
+                "validate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3.5.2 [EP-V1][BVA min] POST /coupons/validate - order_amount 100.000",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('BVA - valid đúng expected', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.valid).to.equal(true);",
+                  "});",
+                  "pm.test('Đúng tại biên: calculated_discount = 10000', () => {",
+                  "  pm.expect(pm.response.json().calculated_discount).to.equal(10000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{couponMinCode}}\",\n  \"order_amount\": 100000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/coupons/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "coupons",
+                "validate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3.5.3 [EP-V1][BVA min+] POST /coupons/validate - order_amount 100.001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('BVA - valid đúng expected', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.valid).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{couponMinCode}}\",\n  \"order_amount\": 100001\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/coupons/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "coupons",
+                "validate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3.5.4 [EP-V1][BVA nominal] POST /coupons/validate - order_amount 300.000",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('BVA - valid đúng expected', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.valid).to.equal(true);",
+                  "});",
+                  "pm.test('Nominal: calculated_discount = 30000', () => {",
+                  "  pm.expect(pm.response.json().calculated_discount).to.equal(30000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{couponMinCode}}\",\n  \"order_amount\": 300000\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1027,7 +2308,7 @@
           "response": []
         }
       ],
-      "description": "Percent, fixed amount, hết hạn, không tồn tại, min order và endpoint public."
+      "description": "Percent, fixed amount, hết hạn, không tồn tại, min order và endpoint public. EP cho min order: X1 = order_amount < 100000; V1 = order_amount >= 100000. BVA lower boundary: 99999 (min-1), 100000 (min), 100001 (min+), 300000 (nominal)."
     },
     {
       "name": "4. Orders API (ORD-328)",
@@ -1585,7 +2866,7 @@
           "response": []
         },
         {
-          "name": "5.6 [BVA] POST /affiliate/withdrawals - Dưới mức tối thiểu",
+          "name": "5.6 [Negative][Boundary min-1] POST /affiliate/withdrawals - 49.999",
           "event": [
             {
               "listen": "test",
@@ -1636,7 +2917,7 @@
           "response": []
         }
       ],
-      "description": "Trạng thái đăng ký, authorization, đăng ký CTV, ref link, report và BVA rút tiền."
+      "description": "Trạng thái đăng ký, authorization, đăng ký CTV, ref link, report và kiểm tra trường hợp ngay dưới ngưỡng rút tối thiểu. Không gọi đây là bộ BVA đầy đủ vì các case >= 50000 còn phụ thuộc trạng thái approved và số dư hoa hồng."
     },
     {
       "name": "6. Automation - Newman & Environment (ORD-330)",
