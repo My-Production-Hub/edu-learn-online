@@ -20,9 +20,9 @@ Chương trình Affiliate cho phép học viên và đối tác tạo thu nhập
 
 ### Các bước tham gia:
 1. Đăng nhập vào hệ thống EduLearn.
-2. Điều hướng đến mục **Tài khoản cá nhân → Tab Tiếp thị liên kết** (đường dẫn: `/tai-khoan?tab=affiliate` hoặc `/tai-khoan`).
-3. Điền đầy đủ thông tin: Họ tên, Email, Số điện thoại, Thông tin ngân hàng (Tên ngân hàng, Số tài khoản, Chi nhánh), Ngày sinh, Địa chỉ.
-4. Nhấn nút **Đăng ký làm Cộng tác viên**.
+2. Điều hướng đến mục **Tài khoản cá nhân → Tab Tiếp thị liên kết** (đường dẫn: `/tai-khoan?tab=affiliate`).
+3. Nhấn nút **`Đăng ký ngay`** (hoặc **`Đăng ký lại ngay`** nếu đơn trước bị từ chối).
+4. Điền các thông tin liên hệ và nhấn **`Đăng ký`** để gửi đơn xét duyệt.
 
 ### Vòng đời trạng thái tài khoản Affiliate (Chuẩn Backend/DB):
 
@@ -30,7 +30,7 @@ Chương trình Affiliate cho phép học viên và đối tác tạo thu nhập
 |:---|:---|:---|
 | `pending` | **Chờ duyệt** | Đơn đăng ký đã gửi thành công, đang chờ Ban quản trị (Manager/Staff) đối soát thông tin. |
 | `approved` | **Đã kích hoạt** | Đã được phê duyệt chính thức, được cấp mã giới thiệu riêng (tiền tố `CTVxxx`), bắt đầu ghi nhận hoa hồng. |
-| `rejected` | **Bị từ chối** | Đơn đăng ký chưa đạt yêu cầu. Học viên có thể cập nhật lại thông tin để gửi yêu cầu xét duyệt lại. |
+| `rejected` | **Bị từ chối** | Đơn đăng ký chưa đạt yêu cầu (có thể bấm **`🔄 Đăng ký lại`** sau khi cập nhật thông tin). |
 | `terminated` | **Đã chấm dứt** | Tài khoản CTV bị thu hồi quyền do vi phạm chính sách hoặc dừng hoạt động. |
 
 ---
@@ -62,10 +62,11 @@ Sau khi tài khoản đạt trạng thái `approved`, giao diện Affiliate Dash
 3. **Thông tin ngân hàng:** Tài khoản nhận tiền phải là tài khoản ngân hàng chính chủ tại Việt Nam đã khai báo.
 
 ### Các bước gửi yêu cầu rút tiền:
-1. Tại trang **Tài khoản → Tab Affiliate**, nhấn nút **Yêu cầu rút tiền**.
-2. Nhập **Số tiền cần rút** (tối thiểu `50.000đ` và không vượt quá số dư hoa hồng khả dụng).
+1. Tại trang **Tài khoản → Tab Affiliate** (`/tai-khoan?tab=affiliate`), tại khung **Rút tiền**, nhấn nút **`Xem Rút Tiền`**.
+2. Form **Yêu cầu rút tiền** xuất hiện, nhập **Số tiền cần rút** (tối thiểu `50.000đ` và không vượt quá số dư hoa hồng khả dụng).
 3. Kiểm tra lại thông tin ngân hàng thụ hưởng (Tên ngân hàng, Số tài khoản, Chủ tài khoản).
-4. Nhấn **Gửi yêu cầu rút tiền**.
+4. Nhấn nút **`Gửi yêu cầu rút tiền`**.
+5. Nhấn nút **`Lịch sử rút tiền`** để xem danh sách các lệnh rút đang chờ duyệt hoặc đã hoàn tất.
 
 ### Vòng đời trạng thái yêu cầu rút tiền:
 
