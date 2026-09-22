@@ -39,7 +39,7 @@ Hệ thống quản trị cung cấp 2 phân hệ độc lập phục vụ cho n
 
 ## 3. Quy trình Xử lý Yêu cầu Rút tiền (Withdrawals Management)
 
-Mọi yêu cầu rút tiền của CTV được tập trung xử lý tại trang **`/admin/withdrawals`**.
+Mọi yêu cầu rút tiền của CTV được tập trung xử lý tại trang **Thanh toán rút tiền** (`/admin/withdrawals`).
 
 ![Giao diện Quản lý Yêu cầu Rút tiền Admin](../../images/09-affiliate-admin.png)
 
@@ -52,22 +52,22 @@ Hệ thống xử lý trực tiếp theo 3 trạng thái chuẩn (không có tr�
 
 ```mermaid
 graph LR
-    A[pending: Chờ duyệt] -->|Admin bấm Duyệt| B[completed: Đã chi trả]
-    A -->|Admin bấm Từ chối| C[rejected: Đã từ chối]
+    A["pending: Chờ xử lý"] -->|Admin bấm Đã thanh toán| B["completed: Đã thanh toán"]
+    A -->|Admin bấm Từ chối| C["rejected: Từ chối"]
 ```
 
-| Trạng thái | Tên hiển thị | Hành động tương ứng của Quản trị viên |
+| Trạng thái | Tên hiển thị trên giao diện | Hành động tương ứng của Quản trị viên |
 |:---|:---|:---|
-| `pending` | **Chờ Duyệt** | Lệnh rút tiền mới được tạo. Admin kiểm tra số tài khoản ngân hàng và số dư. |
-| `completed` | **Đã Hoàn thành** | Sau khi chuyển tiền ngân hàng cho CTV thành công, Admin bấm **Duyệt** để xác nhận đã thanh toán. |
-| `rejected` | **Đã Từ chối** | Thông tin ngân hàng không hợp lệ hoặc có nghi vấn gian lận, Admin bấm **Từ chối**. |
+| `pending` | **Chờ xử lý** | Lệnh rút tiền mới được tạo. Admin kiểm tra số tài khoản ngân hàng và số dư. |
+| `completed` | **Đã thanh toán** | Sau khi chuyển tiền ngân hàng cho CTV thành công, Admin bấm nút **`Đã thanh toán`** để xác nhận hoàn tất chi trả. |
+| `rejected` | **Từ chối** | Thông tin ngân hàng không hợp lệ hoặc có sai sót, Admin bấm nút **`Từ chối`**. |
 
 ### Các bước thao tác duyệt chi trả:
-1. Truy cập menu **Rút tiền CTV** (`/admin/withdrawals`).
-2. Xem thông tin người nhận: Họ tên CTV, Ngân hàng, Số tài khoản, Số tiền yêu cầu.
+1. Truy cập trang **Thanh toán rút tiền** (`/admin/withdrawals`).
+2. Xem thông tin người nhận: Mã yêu cầu, Tên đối tác CTV, Ngân hàng, Số tài khoản, Tên chủ tài khoản, Số tiền yêu cầu.
 3. Thực hiện chuyển khoản số tiền tương ứng qua dịch vụ Internet Banking của ngân hàng.
-4. Trên giao diện Admin, nhấn nút **Duyệt** để hệ thống chuyển trạng thái sang `completed` và trừ số dư hoa hồng của CTV.
-5. Trường hợp thông tin không hợp lệ, nhấn nút **Từ chối** (`rejected`) để hoàn trả số dư lại ví CTV.
+4. Trên giao diện Admin tại cột **Thao tác**, nhấn nút **`Đã thanh toán`** (màu xanh) để hệ thống chuyển trạng thái sang `completed` và trừ số dư hoa hồng của CTV.
+5. Trường hợp thông tin không hợp lệ, nhấn nút **`Từ chối`** (màu đỏ) để hủy yêu cầu và hoàn trả số dư lại ví CTV.
 
 ---
 
