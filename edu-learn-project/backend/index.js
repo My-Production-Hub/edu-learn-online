@@ -1635,9 +1635,13 @@ async function handleAffiliateOrderCompleted(db, orderId) {
     if (!existingNotif) {
       const notifId = `notif-approved-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       await db.run(
-        `INSERT INTO affiliate_notifications (id, affiliate_id, order_id, course_id, buyer_name, amount, commission, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [notifId, rev.affiliate_id, rev.order_id, rev.course_id, rev.buyer_name, rev.order_total, rev.commission_amount, new Date().toISOString()]
+        `INSERT INTO affiliate_notifications (
+           id, affiliate_id, order_id, course_id, buyer_name, amount, commission, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          notifId, rev.affiliate_id, rev.order_id, rev.course_id,
+          rev.buyer_name, rev.order_total, rev.commission_amount, new Date().toISOString()
+        ]
       );
     }
   }
@@ -1993,8 +1997,16 @@ app.get('/api/admin/courses', authenticateToken, checkUserStatus, requireRole(['
   }
 });
 
-app.post('/api/admin/courses', authenticateToken, checkUserStatus, requireRole(['MANAGER', 'STAFF']), async (req, res) => {
-  const { title, description, price, sale_price, category_id, content_html, highlights, content, image, status, instructor } = req.body;
+app.post(
+  '/api/admin/courses',
+  authenticateToken,
+  checkUserStatus,
+  requireRole(['MANAGER', 'STAFF']),
+  async (req, res) => {
+    const {
+      title, description, price, sale_price, category_id,
+      content_html, highlights, content, image, status, instructor
+    } = req.body;
   if (!title || price === undefined) return res.status(400).json({ message: 'Tên khóa học và giá là bắt buộc.' });
 
   try {
@@ -2031,11 +2043,18 @@ function buildCourseUpdateParams(body, existing, id) {
   const salePrice = fallbackField(body.sale_price, existing.sale_price, null);
   const catId = fallbackField(body.category_id, existing.category_id, null);
   const contentHtml = fallbackField(body.content_html, existing.content_html, '');
-  const highlights = body.highlights === undefined ? existing.highlights : JSON.stringify(parseCourseHighlights(body.highlights));
-  const curriculum = body.content === undefined ? existing.curriculum : JSON.stringify(parseCourseCurriculum(body.content));
+  const highlights = body.highlights === undefined
+    ? existing.highlights
+    : JSON.stringify(parseCourseHighlights(body.highlights));
+  const curriculum = body.content === undefined
+    ? existing.curriculum
+    : JSON.stringify(parseCourseCurriculum(body.content));
   const status = body.status || existing.status;
 
-  return [body.title, desc, img, body.price, salePrice, catId, contentHtml, highlights, curriculum, instructor, status, id];
+  return [
+    body.title, desc, img, body.price, salePrice,
+    catId, contentHtml, highlights, curriculum, instructor, status, id
+  ];
 }
 
 app.put('/api/admin/courses/:id', authenticateToken, checkUserStatus, requireRole(['MANAGER', 'STAFF']), async (req, res) => {
@@ -2566,9 +2585,14 @@ async function insertAffiliateWithdrawal(db, reqBody, affiliate, amount) {
   const ctvCode = affiliate.ma_ctv || affiliate.ctv_code || 'CTV001';
 
   await db.run(
-    `INSERT INTO withdrawal_requests (id, affiliate_id, ctv_code, amount, bank_name, bank_account, account_holder, phone, email, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
-    [withdrawalId, affiliate.id, ctvCode, amount, bankName, bankAccount, affiliate.full_name, affiliate.phone, affiliate.email, new Date().toISOString()]
+    `INSERT INTO withdrawal_requests (
+       id, affiliate_id, ctv_code, amount, bank_name,
+       bank_account, account_holder, phone, email, status, created_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+    [
+      withdrawalId, affiliate.id, ctvCode, amount, bankName,
+      bankAccount, affiliate.full_name, affiliate.phone, affiliate.email, new Date().toISOString()
+    ]
   );
   return withdrawalId;
 }

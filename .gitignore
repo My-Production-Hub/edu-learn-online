@@ -23,6 +23,7 @@ coverage/
 *.log
 *.pid
 *.sqlite-journal
+scratch/
 
 # Temporary Jira sync files
 *.txt
